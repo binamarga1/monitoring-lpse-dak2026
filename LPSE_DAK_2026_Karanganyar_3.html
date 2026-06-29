@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisis Tender DAK 2026 — DPUPR Bina Marga Karanganyar</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+  :root {
+    --biru: #0F2D5E;
+    --biru-mid: #1A4A8A;
+    --biru-light: #E8EFF9;
+    --hijau: #1A7F4B;
+    --hijau-light: #E6F4ED;
+    --kuning: #B45309;
+    --kuning-light: #FEF3C7;
+    --merah: #991B1B;
+    --merah-light: #FEE2E2;
+    --abu: #6B7280;
+    --abu-light: #F3F4F6;
+    --putih: #FFFFFF;
+    --border: #E5E7EB;
+    --teks: #111827;
+    --teks-2: #4B5563;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #F0F4FA; color: var(--teks); font-size: 14px; line-height: 1.6; }
+
+  /* HEADER */
+  .header { background: var(--biru); color: white; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo-box { width: 48px; height: 48px; background: rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #93C5FD; letter-spacing: -1px; }
+  .header-title { font-size: 17px; font-weight: 700; letter-spacing: 0.01em; }
+  .header-sub { font-size: 12px; color: #93C5FD; margin-top: 2px; }
+  .header-right { text-align: right; }
+  .badge-dak { background: var(--hijau); color: white; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; letter-spacing: 0.05em; display: inline-block; margin-bottom: 4px; }
+  .header-date { font-size: 11px; color: #93C5FD; }
+
+  /* NAV TABS */
+  .nav-wrap { background: white; border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; gap: 0; }
+  .nav-tab { padding: 14px 20px; font-size: 13px; font-weight: 500; color: var(--abu); cursor: pointer; border-bottom: 3px solid transparent; transition: all .2s; white-space: nowrap; }
+  .nav-tab:hover { color: var(--biru); }
+  .nav-tab.active { color: var(--biru); border-bottom-color: var(--biru); font-weight: 600; }
+
+  /* MAIN */
+  .main { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+
+  /* METRIC CARDS */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .metric-card { background: white; border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow); border-top: 3px solid var(--biru); }
+  .metric-card.hijau { border-top-color: var(--hijau); }
+  .metric-card.kuning { border-top-color: var(--kuning); }
+  .metric-card.merah { border-top-color: #DC2626; }
+  .metric-label { font-size: 11px; color: var(--abu); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .metric-val { font-size: 22px; font-weight: 700; color: var(--teks); line-height: 1.2; }
+  .metric-sub { font-size: 11px; color: var(--abu); margin-top: 4px; }
+  .metric-unit { font-size: 12px; font-weight: 400; color: var(--abu); }
+
+  /* CARDS */
+  .card { background: white; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 24px; overflow: hidden; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--teks); }
+  .card-body { padding: 20px; }
+
+  /* TABEL */
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; font-weight: 600; color: var(--abu); text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px; border-bottom: 2px solid var(--border); background: #FAFAFA; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAFAFA; }
+  .th-right { text-align: right; }
+  .td-right { text-align: right; }
+  .td-center { text-align: center; }
+
+  /* BADGE STATUS */
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-sangat-rendah { background: #DCFCE7; color: #166534; }
+  .badge-rendah { background: #D1FAE5; color: #065F46; }
+  .badge-sedang { background: #FEF3C7; color: #92400E; }
+  .badge-tinggi { background: #FEE2E2; color: #991B1B; }
+  .badge-aktif { background: #DBEAFE; color: #1E40AF; }
+  .badge-selesai { background: #D1FAE5; color: #065F46; }
+  .badge-akan { background: #F3F4F6; color: #6B7280; }
+  .badge-warning { background: #FEF3C7; color: #92400E; }
+
+  /* EFISIENSI BAR */
+  .eff-wrap { width: 100px; background: #E5E7EB; border-radius: 4px; height: 6px; display: inline-block; vertical-align: middle; overflow: hidden; }
+  .eff-bar { height: 6px; border-radius: 4px; }
+
+  /* CHART */
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* TIMELINE */
+  .timeline { position: relative; padding: 8px 0; }
+  .tl-item { display: flex; align-items: flex-start; gap: 16px; padding: 10px 0; position: relative; }
+  .tl-item::before { content: ''; position: absolute; left: 15px; top: 0; bottom: 0; width: 2px; background: var(--border); z-index: 0; }
+  .tl-item:first-child::before { top: 50%; }
+  .tl-item:last-child::before { bottom: 50%; }
+  .tl-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; z-index: 1; position: relative; }
+  .tl-dot.selesai { background: var(--hijau); color: white; }
+  .tl-dot.aktif { background: var(--biru); color: white; box-shadow: 0 0 0 4px rgba(15,45,94,0.15); }
+  .tl-dot.akan { background: #E5E7EB; color: #9CA3AF; }
+  .tl-content { flex: 1; padding-top: 4px; }
+  .tl-nama { font-size: 13px; font-weight: 600; color: var(--teks); }
+  .tl-nama.aktif { color: var(--biru); }
+  .tl-tgl { font-size: 11px; color: var(--abu); margin-top: 2px; }
+
+  /* DETAIL PAKET */
+  .paket-selector { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; }
+  .paket-btn { padding: 10px 8px; background: white; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; text-align: center; font-size: 11px; font-weight: 500; color: var(--teks-2); transition: all .2s; line-height: 1.4; }
+  .paket-btn:hover { border-color: var(--biru-mid); color: var(--biru); }
+  .paket-btn.active { background: var(--biru); color: white; border-color: var(--biru); }
+  .paket-btn .ruas-no { font-size: 16px; font-weight: 700; display: block; }
+
+  /* INFO GRID */
+  .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .info-item { background: var(--abu-light); border-radius: 8px; padding: 12px 14px; }
+  .info-key { font-size: 10px; color: var(--abu); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .info-val { font-size: 13px; font-weight: 600; color: var(--teks); }
+
+  /* PEMENANG BOX (Detail Paket) */
+  .pemenang-box { background: linear-gradient(135deg, #FFFBEB, #FEF3C7); border: 1.5px solid #FCD34D; border-radius: 10px; padding: 14px 16px; }
+  .pemenang-box-kontrak { background: linear-gradient(135deg, #ECFDF5, #D1FAE5); border-color: #6EE7B7; }
+  .pemenang-box-kosong { background: var(--abu-light); border: 1.5px dashed var(--border); text-align: center; }
+  .pemenang-box-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: #92400E; margin-bottom: 6px; }
+  .pemenang-box-kontrak .pemenang-box-label { color: #065F46; }
+  .pemenang-box-kosong-text { font-size: 12px; color: var(--abu); padding: 6px 0; }
+  .pemenang-box-nama { font-size: 16px; font-weight: 700; color: var(--teks); margin-bottom: 8px; }
+  .pemenang-box-row { display: flex; gap: 8px; font-size: 12px; margin-top: 4px; }
+  .pemenang-box-key { color: var(--abu); min-width: 110px; }
+  .pemenang-box-val { color: var(--teks); font-weight: 500; }
+
+  /* ANALISIS PENYEDIA */
+  .heatmap-wrap { overflow-x: auto; }
+  .heatmap-table th, .heatmap-table td { font-size: 11px; padding: 7px 10px; }
+  .heatmap-table th { white-space: nowrap; }
+  .hm-cell { width: 28px; height: 28px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+  .hm-1 { background: #DBEAFE; color: #1E40AF; }
+  .hm-2 { background: #BFDBFE; color: #1D4ED8; }
+  .hm-3 { background: #93C5FD; color: #1E3A8A; }
+  .hm-x { background: #F3F4F6; color: #D1D5DB; }
+  .hm-rank1 { background: #DCFCE7; color: #166534; }
+  .hm-rank2 { background: #FEF3C7; color: #92400E; }
+
+  .flag-card { background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  .flag-title { font-size: 13px; font-weight: 700; color: #92400E; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .flag-body { font-size: 12px; color: #78350F; line-height: 1.6; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .main { padding: 16px; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .paket-selector { grid-template-columns: repeat(2, 1fr); }
+    .info-grid { grid-template-columns: 1fr 1fr; }
+    .header { padding: 14px 16px; }
+    .header-title { font-size: 14px; }
+    .nav-wrap { padding: 0 12px; overflow-x: auto; }
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .print-note { font-size: 11px; color: var(--abu); text-align: center; padding: 20px; border-top: 1px solid var(--border); margin-top: 24px; }
+  
+  .link-lpse { font-size: 11px; color: var(--biru-mid); text-decoration: none; }
+  .link-lpse:hover { text-decoration: underline; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  .section-label { font-size: 11px; font-weight: 700; color: var(--abu); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+  /* DB TOOLBAR */
+  .db-toolbar { background: #1E3A5F; border-bottom: 2px solid #0F2D5E; padding: 8px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .db-toolbar-label { font-size: 11px; color: #93C5FD; font-weight: 600; letter-spacing: 0.05em; margin-right: 4px; }
+  .db-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+  .db-btn-download { background: #1A7F4B; color: white; }
+  .db-btn-download:hover { background: #166040; }
+  .db-btn-upload { background: #1A4A8A; color: white; border: 1px solid #3B7DD8; }
+  .db-btn-upload:hover { background: #0F3570; }
+  .db-btn-reset { background: transparent; color: #F87171; border: 1px solid #F87171; }
+  .db-btn-reset:hover { background: rgba(248,113,113,0.1); }
+  .db-status { font-size: 11px; color: #93C5FD; margin-left: auto; transition: color .3s; }
+  .db-status span { color: #6EE7B7; font-weight: 600; }
+  .db-status.fb-connecting { color: #FCD34D; }
+  .db-status.fb-synced { color: #6EE7B7; }
+  .db-status.fb-error { color: #F87171; }
+  #db-file-input { display: none; }
+
+  /* MONITORING STYLES */
+  .mon-section { margin-bottom: 28px; }
+  .mon-paket-header { background: var(--biru); color: white; padding: 12px 16px; border-radius: 10px 10px 0 0; display: flex; align-items: center; justify-content: space-between; }
+  .mon-paket-title { font-size: 14px; font-weight: 700; }
+  .mon-paket-meta { font-size: 11px; color: #93C5FD; }
+  .mon-table-wrap { background: white; border-radius: 0 0 10px 10px; box-shadow: var(--shadow); overflow: hidden; }
+  .mon-table { width: 100%; border-collapse: collapse; }
+  .mon-table th { font-size: 10px; font-weight: 700; color: var(--abu); text-transform: uppercase; letter-spacing: 0.05em; padding: 9px 10px; background: #F8FAFC; border-bottom: 2px solid var(--border); white-space: nowrap; }
+  .mon-table td { padding: 7px 10px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; font-size: 12px; }
+  .mon-table tr:last-child td { border-bottom: none; }
+  .mon-table tr.pemenang-row td { background: #F0FDF4 !important; }
+  .pemenang-star { color: #F59E0B; font-size: 16px; }
+  .pk-badge { display: inline-block; background: #1A7F4B; color: white; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; vertical-align: middle; margin-left: 4px; }
+  .status-select { font-size: 11px; padding: 4px 8px; border-radius: 5px; border: 1px solid var(--border); background: white; color: var(--teks); cursor: pointer; width: 100%; }
+  .status-select:focus { outline: 2px solid var(--biru); border-color: var(--biru); }
+  .status-lulus { background: #D1FAE5; color: #065F46; border-color: #6EE7B7; }
+  .status-gugur { background: #FEE2E2; color: #991B1B; border-color: #FCA5A5; }
+  .status-belum { background: #F3F4F6; color: #6B7280; border-color: #D1D5DB; }
+  .ket-input { font-size: 11px; padding: 4px 8px; border-radius: 5px; border: 1px solid var(--border); width: 100%; background: white; color: var(--teks); }
+  .ket-input:focus { outline: 2px solid var(--biru); border-color: var(--biru); }
+  .harga-terkoreksi-input { font-size: 11px; padding: 4px 8px; border-radius: 5px; border: 1px solid var(--border); width: 130px; text-align: right; font-family: monospace; }
+  .harga-terkoreksi-input:focus { outline: 2px solid var(--biru); border-color: var(--biru); }
+  .sanggah-wrap { padding: 12px 16px; background: #FFF7ED; border-top: 1px solid #FED7AA; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .sanggah-label { font-size: 12px; font-weight: 600; color: #92400E; }
+  .sanggah-select { font-size: 11px; padding: 4px 10px; border-radius: 5px; border: 1px solid #FCD34D; background: white; color: var(--teks); }
+  .sanggah-input { font-size: 11px; padding: 4px 10px; border-radius: 5px; border: 1px solid #FCD34D; width: 280px; }
+  .mon-summary { display: flex; gap: 10px; padding: 10px 16px; background: #F8FAFC; border-top: 1px solid var(--border); flex-wrap: wrap; font-size: 11px; }
+  .mon-stat { display: flex; align-items: center; gap: 5px; }
+  .mon-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #1F2937; color: white; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 9999; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-left: 4px solid #10B981; }
+  .toast.error { border-left: 4px solid #EF4444; }
+
+  /* RINGKASAN STATUS */
+  .status-progress { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+  .sp-card { background: white; border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow); text-align: center; }
+  .sp-num { font-size: 24px; font-weight: 800; }
+  .sp-label { font-size: 11px; color: var(--abu); margin-top: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-box">BM</div>
+    <div>
+      <div class="header-title">Analisis Tender DAK 2026 — Bina Marga Karanganyar</div>
+      <div class="header-sub">DPUPR Kabupaten Karanganyar &nbsp;|&nbsp; Bidang Bina Marga &nbsp;|&nbsp; SPSE v4.5</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="badge-dak">DAK 2026</div>
+    <div class="header-date" id="tgl-cetak">Dicetak: —</div>
+  </div>
+</div>
+
+<!-- DB TOOLBAR -->
+<div class="db-toolbar">
+  <span class="db-toolbar-label">&#128196; DATABASE</span>
+  <button class="db-btn db-btn-download" onclick="downloadExcel()">&#11015; Download Excel</button>
+  <button class="db-btn db-btn-upload" onclick="document.getElementById('db-file-input').click()">&#11014; Upload Excel</button>
+  <button class="db-btn db-btn-reset" onclick="konfirmasiReset()">&#8635; Reset Data</button>
+  <input type="file" id="db-file-input" accept=".xlsx,.xls" onchange="uploadExcel(event)">
+  <div class="db-status" id="fb-status">&#128260; Menghubungkan ke cloud...</div>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav-wrap">
+  <div class="nav-tab active" onclick="switchTab('ringkasan', this)">&#9632; Ringkasan Eksekutif</div>
+  <div class="nav-tab" onclick="switchTab('detail', this)">&#9632; Detail Paket</div>
+  <div class="nav-tab" onclick="switchTab('monitoring', this)">&#9632; Monitoring Evaluasi</div>
+  <div class="nav-tab" onclick="switchTab('penyedia', this)">&#9632; Analisis Penyedia</div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<!-- ===================== TAB 1: RINGKASAN EKSEKUTIF ===================== -->
+<div id="tab-ringkasan" class="tab-content active">
+
+  <!-- METRIC CARDS -->
+  <div class="metrics">
+    <div class="metric-card">
+      <div class="metric-label">Total Pagu APBD-P</div>
+      <div class="metric-val" id="metric-pagu">Rp — <span class="metric-unit">miliar</span></div>
+      <div class="metric-sub">10 paket DAK 2026</div>
+    </div>
+    <div class="metric-card hijau">
+      <div class="metric-label">Total HPS</div>
+      <div class="metric-val" id="metric-hps">Rp — <span class="metric-unit">miliar</span></div>
+      <div class="metric-sub">Nilai pagu terkoreksi</div>
+    </div>
+    <div class="metric-card kuning">
+      <div class="metric-label">Potensi Efisiensi</div>
+      <div class="metric-val" id="metric-efisiensi">Rp — <span class="metric-unit">miliar</span></div>
+      <div class="metric-sub" id="metric-efisiensi-sub">Selisih HPS vs harga negosiasi</div>
+    </div>
+    <div class="metric-card merah">
+      <div class="metric-label">Rata-rata Turun dari HPS</div>
+      <div class="metric-val" id="metric-turun">— <span class="metric-unit">%</span></div>
+      <div class="metric-sub" id="metric-turun-sub">Rerata harga negosiasi tiap paket</div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">HPS vs Penawaran Terendah</div>
+        <span style="font-size:11px;color:var(--abu)">Rp Miliar</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:300px">
+          <canvas id="chartHPS" role="img" aria-label="Bar chart perbandingan HPS dan penawaran terendah per paket">Grafik perbandingan HPS vs penawaran terendah 10 paket DAK 2026.</canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">HPS vs Hasil Negosiasi (HN)</div>
+        <span style="font-size:11px;color:var(--abu)">Rp Miliar</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:300px">
+          <canvas id="chartHN" role="img" aria-label="Bar chart perbandingan HPS dan hasil negosiasi per paket">Grafik perbandingan HPS vs hasil negosiasi 10 paket DAK 2026.</canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="two-col">
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-header">
+        <div class="card-title">Tahapan Tender — Status Hari Ini</div>
+        <span class="badge badge-aktif" style="font-size:10px" id="tgl-timeline">—</span>
+      </div>
+      <div class="card-body" style="padding:12px 20px">
+        <div style="font-size:11px;color:var(--abu);margin-bottom:12px">
+          ⬤ <span style="color:var(--hijau)">Selesai</span> &nbsp; ⬤ <span style="color:var(--biru)">Sedang Berjalan</span> &nbsp; ⬤ <span style="color:#9CA3AF">Akan Datang</span>
+        </div>
+        <div class="timeline" id="timeline-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABEL RINGKASAN -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Ringkasan 10 Paket DAK — Perbandingan Penawaran vs HPS</div>
+      <span style="font-size:11px;color:var(--abu)">Diurutkan: nilai HPS tertinggi</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama Paket</th>
+            <th>Kode Tender</th>
+            <th class="th-right">HPS (Rp)</th>
+            <th class="th-right">Penawaran Terendah</th>
+            <th class="th-right">Harga Negosiasi (HN)</th>
+            <th class="th-right">Selisih dari HPS</th>
+            <th class="th-right">% Turun</th>
+            <th class="td-center">Peserta</th>
+            <th class="td-center">Status</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-ringkasan"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================== TAB 2: DETAIL PAKET ===================== -->
+<div id="tab-detail" class="tab-content">
+
+  <div class="paket-selector" id="paket-selector"></div>
+
+  <div id="detail-content"></div>
+
+</div>
+
+<!-- ===================== TAB 3: MONITORING EVALUASI ===================== -->
+<div id="tab-monitoring" class="tab-content">
+
+  <!-- PROGRESS SUMMARY -->
+  <div class="status-progress" id="mon-progress"></div>
+
+  <!-- TABEL MONITORING PER PAKET -->
+  <div id="mon-content"></div>
+
+</div>
+
+<!-- ===================== TAB 4: ANALISIS PENYEDIA ===================== -->
+<div id="tab-penyedia" class="tab-content">
+
+  <!-- FLAG ANOMALI -->
+  <div class="flag-card">
+    <div class="flag-title">⚠ Catatan: Pola Penawaran Berdekatan — Ruas Sringin–Tunggulrejo</div>
+    <div class="flag-body">
+      Tiga penawaran terendah pada paket ini memiliki selisih yang sangat kecil: CV Andromeda Konstriksi (Rp 1.865.859.637), CV. Anugerah Lima Utama (Rp 1.867.167.181), dan CV. Mitra Karya Lima (Rp 1.867.174.537). Selisih antara peringkat 1 dan 3 hanya <strong>Rp 1.314.900 (0,07% dari HPS)</strong>. Pokja disarankan memeriksa kemiripan dokumen penawaran, metode pelaksanaan, dan analisis harga satuan ketiga peserta sebagai bagian dari evaluasi kewajaran harga.
+    </div>
+  </div>
+
+  <!-- HEATMAP PENYEDIA -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+      <div class="card-title">Penyedia Jasa yang Memasukkan Penawaran — Lintas Paket</div>
+      <div style="display:flex;gap:8px;align-items:center;font-size:11px;color:var(--abu)">
+        <span style="display:inline-flex;align-items:center;gap:4px"><span class="hm-cell hm-rank1">1</span> Peringkat 1</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span class="hm-cell hm-rank2">2</span> Peringkat 2</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span class="hm-cell hm-1">n</span> Peringkat lain</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span class="hm-cell hm-x">—</span> Tidak ikut</span>
+      </div>
+    </div>
+    <div class="heatmap-wrap">
+      <table class="heatmap-table">
+        <thead id="hm-head"></thead>
+        <tbody id="hm-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TABEL REKAPITULASI PENYEDIA -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Rekapitulasi Keaktifan Penyedia Jasa</div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama Penyedia Jasa</th>
+            <th class="td-center">Paket Diikuti</th>
+            <th class="td-center">Peringkat 1</th>
+            <th class="td-center">Peringkat 2</th>
+            <th class="th-right">Rata-rata % Turun</th>
+            <th>Catatan</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-penyedia"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="print-note">
+  Dokumen ini dibuat untuk keperluan internal DPUPR Bina Marga Kabupaten Karanganyar.<br>
+  Status tahapan tender mengikuti tanggal sistem perangkat saat halaman dibuka. Aplikasi SPSE v4.5u20250321.
+</div>
+
+</div><!-- end main -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DATA MASTER
+// ============================================================
+const PAKET = [
+  {
+    id: 0, no_ruas: 159,
+    nama: "Jumapolo – Jatipuro",
+    lokasi: "Jatipuro",
+    pagu: 9288000000,
+    hps: 9255508119.33,
+    kode_tender: "10137948000",
+    kode_rup: "67145494",
+    tgl_buat: "20 Mei 2026",
+    peserta_daftar: 51,
+    jenis_kontrak: "Harga Satuan",
+    kualifikasi: "Usaha Kecil",
+    metode: "Pascakualifikasi Satu File — Harga Terendah Sistem Gugur",
+    sbu: "BS001 — Konstruksi Bangunan Sipil Jalan",
+    jadwal_group: "B",
+    penawaran: [
+      { nama: "CV. Karya Utama", harga: 6987747809.54 },
+      { nama: "CV. Mutiara Indah", harga: 7261528207.57 },
+      { nama: "CV. Linggis Nusantara", harga: 7404406495.46 },
+      { nama: "CV. Kojay Maulana", harga: 7549229813.04 },
+      { nama: "CV. Karya Usaha Berdikari", harga: 7794767344.42 },
+      { nama: "CV. Putra Kalingga", harga: 8285838344.30 },
+      { nama: "CV. Mitra Karya Lima", harga: 8370773066.67 },
+      { nama: "CV Jasem Makmur Abadi", harga: 8421041939.70 },
+      { nama: "CV. Anugerah Lima Utama", harga: 8618977120.83 },
+    ]
+  },
+  {
+    id: 1, no_ruas: 81,
+    nama: "MGR. Sugiyopranoto",
+    lokasi: "Karanganyar / Karangpandan",
+    pagu: 7600000000,
+    hps: 7561282115.70,
+    kode_tender: "10137797000",
+    kode_rup: "67145594",
+    tgl_buat: "20 Mei 2026",
+    peserta_daftar: 30,
+    jenis_kontrak: "Harga Satuan",
+    kualifikasi: "Usaha Kecil",
+    metode: "Pascakualifikasi Satu File — Harga Terendah Sistem Gugur",
+    sbu: "BS001 — Konstruksi Bangunan Sipil Jalan (KBLI 42101)",
+    jadwal_group: "A",
+    penawaran: [
+      { nama: "CV. Anugerah Lima Utama", harga: 5780049199.41 },
+      { nama: "CV. Putra Cakra Bersaudara", harga: 5815872709.12 },
+      { nama: "CV. Reyteknindo Bangun Nusa", harga: 5845174479.62 },
+      { nama: "CV. Karya Utama", harga: 5853424712.74 },
+      { nama: "CV Andromeda Konstriksi", harga: 5898401413.24 },
+      { nama: "CV. Mitra Karya Lima", harga: 5950737690.06 },
+      { nama: "CV Enam Thobiat Luhur", harga: 6049025692.56 },
+      { nama: "CV Jasem Makmur Abadi", harga: 6439896990.00 },
+    ]
+  },
+  {
+    id: 2, no_ruas: 72,
+    nama: "Bendungan – Jenggrik",
+    lokasi: "Mojogedang",
+    pagu: 5880000000,
+    hps: 5836953544.33,
+    kode_tender: "10138933000",
+    kode_rup: "67145576",
+    tgl_buat: "24 Mei 2026",
+    peserta_daftar: 37,
+    jenis_kontrak: "Harga Satuan",
+    kualifikasi: "Usaha Kecil",
+    metode: "Pascakualifikasi Satu File — Harga Terendah Sistem Gugur",
+    sbu: "BS001 — Konstruksi Bangunan Sipil Jalan",
+    jadwal_group: "B",
+    penawaran: [
+      { nama: "CV. Reyteknindo Bangun Nusa", harga: 4405215807.30 },
+      { nama: "CV. Karya Utama", harga: 4546519668.99 },
+      { nama: "CV. Kojay Maulana", harga: 4668177371.47 },
+      { nama: "CV. Linggis Nusantara", harga: 4669562835.46 },
+      { nama: "CV. Redjo Pawiro", harga: 4669562835.46 },
+      { nama: "CV. Karya Usaha Berdikari", harga: 4799688798.87 },
+      { nama: "Cipta Graha", harga: 4936035797.64 },
+      { nama: "CV Jasem Makmur Abadi", harga: 5007313408.04 },
+    ]
+  },
+  {
+    id: 3, no_ruas: 4,
+    nama: "Colomadu – Banyuanyar",
+    lokasi: "Colomadu",
+    pagu: 4900000000,
+    hps: 4876995634.71,
+    kode_tender: "10137772000",
+    kode_rup: "67145518",
+    tgl_buat: "20 Mei 2026",
+    peserta_daftar: 39,
+    jenis_kontrak: "Harga Satuan",
+    kualifikasi: "Usaha Kecil",
+    metode: "Pascakualifikasi Satu File — Harga Terendah Sistem Gugur",
+    sbu: "BS001 — Konstruksi Bangunan Sipil Jalan (KBLI 42101 2025)",
+    jadwal_group: "A",
+    penawaran: [
+      { nama: "CV. Anugerah Lima Utama", harga: 3665523609.42 },
+      { nama: "CV. Mitra Karya Lima", harga: 3791361119.28 },
+      { nama: "Pilar Jaya Persada, CV", harga: 3901596507.77 },
+      { nama: "CV Jaya Sempurna Abadi", harga: 4027701714.33 },
+      { nama: "CV. Karya Usaha Berdikari", harga: 4114509793.56 },
+      { nama: "CV. Arsa Jaya", harga: 4378362243.93 },
+    ]
+  },
+  {
+    id: 4, no_ruas: 148,
+    nama: "Jatiyoso – Beruk",
+    lokasi: "Jatiyoso",
+    pagu: 4410000000,
+    hps: 4390650294.66,
+    kode_tender: "10137886000",
+    kode_rup: "67145696",
+    tgl_buat: "20 Mei 2026",
+    peserta_daftar: 37,
+    jenis_kontrak: "Harga Satuan",
+    kualifikasi: "Usaha Kecil",
+    metode: "Pascakualifikasi Satu File — Harga Terendah Sistem Gugur",
+    sbu: "BS001 — Konstruksi Bangunan Sipil Jalan",
+    jadwal_group: "B",
+    penawaran: [
+      { nama: "Perisai Bangsa, CV", harga: 3512377513.26 },
+      { nama: "CV. Linggis Nusantara", harga: 3512520235.73 },
+      { nama: "CV. Kojay Maulana", harga: 3565244376.94 },
+      { nama: "CV. Anugerah Lima Utama", harga: 3649719265.14 },
+      { nama: "CV. Putra Cakra Bersaudara", harga: 3703906215.06 },
+      { nama: "CV. Mitra Karya Lima", harga: 3723292642.56 },
+      { nama: "Wibowo Mitra Bangun", harga: 3918732622.50 },
+    ]
+  },
+  {
+    id: 5, no_ruas: 144,
+    nama: "Matesih – Plosorejo",
+    lokasi: "Matesih",
+    pagu: 3990000000,
+    hps: 3958154594.40,
+    kode_tender: "10138934000",
+    kode_rup: "67145645",
+    tgl_buat: "24 Mei 2026",
+    peserta_daftar: 46,
+    jenis_kontrak: "Harga Satuan",
+    kualifikasi: "Usaha Kecil",
+    metode: "Pascakualifikasi Satu File — Harga Terendah Sistem Gugur",
+    sbu: "BS001 — Konstruksi Bangunan Sipil Jalan",
+    jadwal_group: "B",
+    penawaran: [
+      { nama: "CV. Karya Utama", harga: 3148283734.44 },
+      { nama: "CV. Kojay Maulana", harga: 3162671316.25 },
+      { nama: "CV. Putra Cakra Bersaudara", harga: 3166574895.36 },
+      { nama: "Cipta Graha", harga: 3433682120.67 },
+      { nama: "Perisai Bangsa, CV", harga: 3461478492.12 },
+    ]
+  },
+  {
+    id: 6, no_ruas: 22,
+    nama: "Tuban – Jambu",
+    lokasi: "Gondangrejo",
+    pagu: 4068000000,
+    hps: 4046110125.45,
+    kode_tender: "10138936000",
+    kode_rup: "67145546",
+    tgl_buat: "24 Mei 2026",
+    peserta_daftar: 33,
+    jenis_kontrak: "Harga Satuan",
+    kualifikasi: "Usaha Kecil",
+    metode: "Pascakualifikasi Satu File — Harga Terendah Sistem Gugur",
+    sbu: "BS001 — Konstruksi Bangunan Sipil Jalan (KBLI 42101)",
+    jadwal_group: "A",
+    penawaran: [
+      { nama: "CV. Anugerah Lima Utama", harga: 3111388788.18 },
+      { nama: "CV. Karya Utama", harga: 3167700604.49 },
+      { nama: "CV. Redjo Pawiro", harga: 3180029380.30 },
+      { nama: "CV. Mitra Karya Lima", harga: 3185231427.31 },
+      { nama: "CV. Sigra Teknik", harga: 3194944750.85 },
+      { nama: "CV. Reyteknindo Bangun Nusa", harga: 3236888100.36 },
+      { nama: "CV Nusantara Jaya Kontraktor", harga: 3355028490.71 },
+      { nama: "CV Jaya Sempurna Abadi", harga: 3358081250.68 },
+      { nama: "CV. Arsa Jaya", harga: 3463295081.72 },
+      { nama: "Cipta Graha", harga: 3548561015.46 },
+    ]
+  },
+  {
+    id: 7, no_ruas: 157,
+    nama: "Tlobosempon – Matesih",
+    lokasi: "Jatiyoso / Matesih",
+    pagu: 3780000000,
+    hps: 3758668748.82,
+    kode_tender: "10137806000",
+    kode_rup: "67145506",
+    tgl_buat: "20 Mei 2026",
+    peserta_daftar: 23,
+    jenis_kontrak: "Harga Satuan",
+    kualifikasi: "Usaha Kecil",
+    metode: "Pascakualifikasi Satu File — Harga Terendah Sistem Gugur",
+    sbu: "BS001 — Konstruksi Bangunan Sipil Jalan (KBLI 42101)",
+    jadwal_group: "A",
+    penawaran: [
+      { nama: "CV Andromeda Konstriksi", harga: 2947326569.74 },
+      { nama: "CV. Mitra Karya Lima", harga: 2957857641.54 },
+      { nama: "CV. Anugerah Lima Utama", harga: 2963475375.96 },
+      { nama: "CV Enam Thobiat Luhur", harga: 3006934999.06 },
+      { nama: "CV. Setia Budi", harga: 3022704741.38 },
+      { nama: "Perisai Bangsa, CV", harga: 3038852561.10 },
+      { nama: "CV Jasem Makmur Abadi", harga: 3326886430.02 },
+    ]
+  },
+  {
+    id: 8, no_ruas: 162,
+    nama: "Jatipuro – Klerong",
+    lokasi: "Jatipuro",
+    pagu: 1800000000,
+    hps: 1792759796.76,
+    kode_tender: "10137874000",
+    kode_rup: "67145619",
+    tgl_buat: "20 Mei 2026",
+    peserta_daftar: 47,
+    jenis_kontrak: "Harga Satuan",
+    kualifikasi: "Usaha Kecil",
+    metode: "Pascakualifikasi Satu File — Harga Terendah Sistem Gugur",
+    sbu: "BS001 — Konstruksi Bangunan Sipil Jalan",
+    jadwal_group: "B",
+    penawaran: [
+      { nama: "CV. Mutiara Indah", harga: 1408934359.67 },
+      { nama: "CV. Karya Utama", harga: 1434207837.41 },
+      { nama: "CV. Kojay Maulana", harga: 1434207837.41 },
+      { nama: "PT. AZP Barokah Mandiri", harga: 1484505325.33 },
+      { nama: "CV. Putra Kalingga", harga: 1607557355.37 },
+      { nama: "Zhafran Jaya Konstruksi", harga: 1681304790.00 },
+    ]
+  },
+  {
+    id: 9, no_ruas: 180,
+    nama: "Sringin – Tunggulrejo",
+    lokasi: "Jumantono",
+    pagu: 2380000000,
+    hps: 2365693632.75,
+    kode_tender: "10138935000",
+    kode_rup: "67145665",
+    tgl_buat: "24 Mei 2026",
+    peserta_daftar: 27,
+    jenis_kontrak: "Harga Satuan",
+    kualifikasi: "Usaha Kecil",
+    metode: "Pascakualifikasi Satu File — Harga Terendah Sistem Gugur",
+    sbu: "BS001 — Konstruksi Bangunan Sipil Jalan (KBLI 42101)",
+    jadwal_group: "A",
+    penawaran: [
+      { nama: "CV Andromeda Konstriksi", harga: 1865859637.51 },
+      { nama: "CV. Anugerah Lima Utama", harga: 1867167181.56 },
+      { nama: "CV. Mitra Karya Lima", harga: 1867174537.53 },
+      { nama: "Perisai Bangsa, CV", harga: 1892843206.50 },
+      { nama: "CV. Setia Budi", harga: 1939942639.90 },
+      { nama: "PT. AZP Barokah Mandiri", harga: 1963586252.71 },
+      { nama: "CV Jasem Makmur Abadi", harga: 2020462341.84 },
+      { nama: "Zhafran Jaya Konstruksi", harga: 2046129600.00 },
+    ]
+  },
+];
+
+const JADWAL_A = [
+  { nama: "Pengumuman Pascakualifikasi", mulai: "8 Jun 2026 16:00", sampai: "15 Jun 2026 09:59" },
+  { nama: "Download Dokumen Pemilihan", mulai: "8 Jun 2026 16:00", sampai: "15 Jun 2026 09:59" },
+  { nama: "Pemberian Penjelasan", mulai: "10 Jun 2026 09:00", sampai: "10 Jun 2026 11:00" },
+  { nama: "Upload Dokumen Penawaran", mulai: "10 Jun 2026 11:01", sampai: "15 Jun 2026 09:59" },
+  { nama: "Pembukaan Dokumen Penawaran", mulai: "15 Jun 2026 10:00", sampai: "19 Jun 2026 23:59" },
+  { nama: "Evaluasi Adm., Kualifikasi, Teknis & Harga", mulai: "15 Jun 2026 10:00", sampai: "25 Jun 2026 23:59" },
+  { nama: "Pembuktian Kualifikasi", mulai: "15 Jun 2026 10:00", sampai: "25 Jun 2026 23:59" },
+  { nama: "Penetapan Pemenang", mulai: "26 Jun 2026 08:00", sampai: "26 Jun 2026 11:59" },
+  { nama: "Pengumuman Pemenang", mulai: "26 Jun 2026 12:00", sampai: "26 Jun 2026 13:59" },
+  { nama: "Masa Sanggah", mulai: "26 Jun 2026 14:00", sampai: "1 Jul 2026 14:01" },
+  { nama: "Surat Penunjukan Penyedia (SPPBJ)", mulai: "2 Jul 2026 08:00", sampai: "2 Jul 2026 23:59" },
+  { nama: "Penandatanganan Kontrak", mulai: "3 Jul 2026 08:00", sampai: "14 Jul 2026 08:00" },
+];
+
+const JADWAL_B = [
+  { nama: "Pengumuman Pascakualifikasi", mulai: "5 Jun 2026 12:00", sampai: "12 Jun 2026 09:00" },
+  { nama: "Download Dokumen Pemilihan", mulai: "5 Jun 2026 12:00", sampai: "12 Jun 2026 09:00" },
+  { nama: "Pemberian Penjelasan", mulai: "8 Jun 2026 09:00", sampai: "8 Jun 2026 11:00" },
+  { nama: "Upload Dokumen Penawaran", mulai: "8 Jun 2026 12:00", sampai: "12 Jun 2026 09:00" },
+  { nama: "Pembukaan Dokumen Penawaran", mulai: "12 Jun 2026 10:00", sampai: "25 Jun 2026 23:59" },
+  { nama: "Evaluasi Adm., Kualifikasi, Teknis & Harga", mulai: "12 Jun 2026 10:00", sampai: "24 Jun 2026 23:59" },
+  { nama: "Pembuktian Kualifikasi", mulai: "12 Jun 2026 10:00", sampai: "24 Jun 2026 23:59" },
+  { nama: "Penetapan Pemenang", mulai: "26 Jun 2026 08:00", sampai: "26 Jun 2026 10:00" },
+  { nama: "Pengumuman Pemenang", mulai: "26 Jun 2026 10:01", sampai: "26 Jun 2026 13:00" },
+  { nama: "Masa Sanggah", mulai: "26 Jun 2026 13:01", sampai: "1 Jul 2026 13:01" },
+  { nama: "Surat Penunjukan Penyedia (SPPBJ)", mulai: "1 Jul 2026 14:00", sampai: "3 Jul 2026 13:00" },
+  { nama: "Penandatanganan Kontrak", mulai: "6 Jul 2026 08:00", sampai: "15 Jul 2026 16:00" },
+];
+
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
+function pct(harga, hps) { return (harga - hps) / hps * 100; }
+function fmtRp(v) { return 'Rp ' + (v/1e9).toFixed(3) + ' M'; }
+function fmtRpFull(v) { return 'Rp ' + v.toLocaleString('id-ID'); }
+function fmtPct(p) { return (p >= 0 ? '+' : '') + p.toFixed(2) + '%'; }
+
+function minPenawaran(p) {
+  return Math.min(...p.penawaran.map(x => x.harga));
+}
+function namaMin(p) {
+  const min = minPenawaran(p);
+  return p.penawaran.find(x => x.harga === min).nama;
+}
+
+// Mengambil Hasil Negosiasi (HN) dari peserta yang jadi pemenang/calon pemenang.
+// Mengembalikan null jika belum ada pemenang ATAU HN belum diisi.
+function getHargaNegosiasi(p) {
+  const winIdx = getPemenang(p.id);
+  if (winIdx < 0) return null;
+  const sorted = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+  const d = DB[dbKey(p.id, winIdx)];
+  if (!d || d.hasil_negosiasi === null || d.hasil_negosiasi === undefined) return null;
+  return d.hasil_negosiasi;
+}
+
+function getBadge(p) {
+  if (p <= -20) return ['badge-sangat-rendah', '< −20%'];
+  if (p <= -15) return ['badge-rendah', '−15% s/d −20%'];
+  if (p <= -10) return ['badge-sedang', '−10% s/d −15%'];
+  return ['badge-warning', '> −10%'];
+}
+
+function statusTahap(mulaiStr, sampaiStr) {
+  const now = new Date(); // REALTIME — mengikuti tanggal & jam aktual saat halaman dibuka
+  const parse = s => {
+    const m = {'Jan':0,'Feb':1,'Mar':2,'Apr':3,'Mei':4,'Jun':5,'Jul':6,'Agt':7,'Sep':8,'Okt':9,'Nov':10,'Des':11};
+    const parts = s.trim().split(' ');
+    const tgl = parseInt(parts[0]);
+    const bln = m[parts[1].replace('.','')] ?? 5;
+    const thn = parseInt(parts[2].split(' ')[0]);
+    const jam = parts[2] ? parts[2].split(' ')[1] || '00:00' : '00:00';
+    const [h, mn] = (s.split(' ').pop() || '00:00').split(':').map(Number);
+    return new Date(thn, bln, tgl, h, mn);
+  };
+  try {
+    const mulai = parse(mulaiStr);
+    const sampai = parse(sampaiStr);
+    if (now < mulai) return 'akan';
+    if (now > sampai) return 'selesai';
+    return 'aktif';
+  } catch(e) { return 'akan'; }
+}
+
+// ============================================================
+// RENDER CHART
+// ============================================================
+let _chartHPSInstance = null;
+let _chartHNInstance = null;
+
+function renderChart() {
+  const sorted = [...PAKET].sort((a,b) => b.hps - a.hps);
+  const labels = sorted.map(p => p.nama.length > 18 ? p.nama.substring(0,18)+'…' : p.nama);
+  const dataHPS = sorted.map(p => +(p.hps/1e9).toFixed(3));
+  const dataPenawaran = sorted.map(p => +(minPenawaran(p)/1e9).toFixed(3));
+
+  if (_chartHPSInstance) { _chartHPSInstance.destroy(); _chartHPSInstance = null; }
+  if (_chartHNInstance) { _chartHNInstance.destroy(); _chartHNInstance = null; }
+  // Bersihkan legend manual lama (kalau renderChart dipanggil ulang)
+  document.querySelectorAll('.chart-legend-manual').forEach(el => el.remove());
+
+  _chartHPSInstance = new Chart(document.getElementById('chartHPS'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'HPS',
+          data: dataHPS,
+          backgroundColor: 'rgba(15,45,94,0.18)',
+          borderColor: '#0F2D5E',
+          borderWidth: 1.5,
+          borderRadius: 4,
+        },
+        {
+          label: 'Penawaran Terendah',
+          data: dataPenawaran,
+          backgroundColor: 'rgba(26,127,75,0.75)',
+          borderColor: '#1A7F4B',
+          borderWidth: 1,
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: Rp ${ctx.parsed.y.toFixed(3)} M`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 30 }, grid: { display: false } },
+        y: { ticks: { font: { size: 11 }, callback: v => 'Rp ' + v + ' M' }, grid: { color: '#F3F4F6' } }
+      }
+    }
+  });
+
+  // Legend manual
+  const legendHtml = `<div class="chart-legend-manual" style="display:flex;gap:20px;font-size:12px;color:#4B5563;margin-top:8px;justify-content:center">
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:2px;background:rgba(15,45,94,0.3);border:1.5px solid #0F2D5E;display:inline-block"></span>HPS</span>
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:2px;background:rgba(26,127,75,0.75);display:inline-block"></span>Penawaran Terendah</span>
+  </div>`;
+  document.querySelector('#chartHPS').parentElement.insertAdjacentHTML('afterend', legendHtml);
+
+  // ---- CHART 2: HPS vs Hasil Negosiasi (HN) ----
+  const dataHN = sorted.map(p => {
+    const hn = getHargaNegosiasi(p);
+    return hn === null ? 0 : +(hn/1e9).toFixed(3);
+  });
+  const belumNegoFlags = sorted.map(p => getHargaNegosiasi(p) === null);
+
+  _chartHNInstance = new Chart(document.getElementById('chartHN'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'HPS',
+          data: dataHPS,
+          backgroundColor: 'rgba(15,45,94,0.18)',
+          borderColor: '#0F2D5E',
+          borderWidth: 1.5,
+          borderRadius: 4,
+        },
+        {
+          label: 'Hasil Negosiasi',
+          data: dataHN,
+          backgroundColor: sorted.map((p,i) => belumNegoFlags[i] ? 'rgba(156,163,175,0.25)' : 'rgba(180,83,9,0.78)'),
+          borderColor: sorted.map((p,i) => belumNegoFlags[i] ? '#9CA3AF' : '#B45309'),
+          borderWidth: 1,
+          borderDash: undefined,
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label === 'Hasil Negosiasi' && belumNegoFlags[ctx.dataIndex]) {
+                return ' Hasil Negosiasi: belum nego';
+              }
+              return ` ${ctx.dataset.label}: Rp ${ctx.parsed.y.toFixed(3)} M`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 30 }, grid: { display: false } },
+        y: { ticks: { font: { size: 11 }, callback: v => 'Rp ' + v + ' M' }, grid: { color: '#F3F4F6' } }
+      }
+    }
+  });
+
+  const legendHtmlHN = `<div class="chart-legend-manual" style="display:flex;gap:20px;font-size:12px;color:#4B5563;margin-top:8px;justify-content:center;flex-wrap:wrap">
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:2px;background:rgba(15,45,94,0.3);border:1.5px solid #0F2D5E;display:inline-block"></span>HPS</span>
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:2px;background:rgba(180,83,9,0.78);display:inline-block"></span>Hasil Negosiasi</span>
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:2px;background:rgba(156,163,175,0.4);display:inline-block"></span>Belum nego</span>
+  </div>`;
+  document.querySelector('#chartHN').parentElement.insertAdjacentHTML('afterend', legendHtmlHN);
+}
+
+// ============================================================
+// RENDER TIMELINE
+// ============================================================
+function renderTimeline() {
+  // Gunakan jadwal B sebagai referensi (milestone sama)
+  const tahapan = [
+    { nama: "Pengumuman & Download Dokumen", mulai: "5 Jun 2026 12:00", sampai: "15 Jun 2026 09:00" },
+    { nama: "Pemberian Penjelasan", mulai: "8 Jun 2026 09:00", sampai: "10 Jun 2026 11:00" },
+    { nama: "Upload Dokumen Penawaran", mulai: "8 Jun 2026 12:00", sampai: "15 Jun 2026 09:59" },
+    { nama: "Pembukaan Dokumen Penawaran", mulai: "12 Jun 2026 10:00", sampai: "19 Jun 2026 23:59" },
+    { nama: "Evaluasi & Pembuktian Kualifikasi", mulai: "12 Jun 2026 10:00", sampai: "25 Jun 2026 23:59" },
+    { nama: "Penetapan & Pengumuman Pemenang", mulai: "26 Jun 2026 08:00", sampai: "26 Jun 2026 13:59" },
+    { nama: "Masa Sanggah", mulai: "26 Jun 2026 14:00", sampai: "1 Jul 2026 14:01" },
+    { nama: "SPPBJ & Penandatanganan Kontrak", mulai: "1 Jul 2026 14:00", sampai: "15 Jul 2026 16:00" },
+  ];
+
+  const wrap = document.getElementById('timeline-wrap');
+  wrap.innerHTML = tahapan.map((t, i) => {
+    const status = statusTahap(t.mulai, t.sampai);
+    const dotClass = status === 'selesai' ? 'selesai' : status === 'aktif' ? 'aktif' : 'akan';
+    const namaClass = status === 'aktif' ? ' aktif' : '';
+    const icon = status === 'selesai' ? '✓' : status === 'aktif' ? '●' : (i+1);
+    return `<div class="tl-item">
+      <div class="tl-dot ${dotClass}">${icon}</div>
+      <div class="tl-content">
+        <div class="tl-nama${namaClass}">${t.nama}${status === 'aktif' ? ' <span class="badge badge-aktif" style="font-size:10px;vertical-align:middle">Sedang berjalan</span>' : ''}</div>
+        <div class="tl-tgl">${t.mulai} — ${t.sampai}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// RENDER PAKET SELECTOR (TAB 2)
+// ============================================================
+let activeDetail = 0;
+function renderPaketSelector() {
+  const sel = document.getElementById('paket-selector');
+  const sorted = [...PAKET].sort((a,b) => b.hps - a.hps);
+  sel.innerHTML = sorted.map((p, i) => `
+    <div class="paket-btn${i === 0 ? ' active' : ''}" onclick="selectPaket(${p.id}, this)">
+      <span class="ruas-no">${p.no_ruas}</span>
+      ${p.nama}
+    </div>
+  `).join('');
+  activeDetail = sorted[0].id;
+  renderDetailPaket(sorted[0].id);
+}
+
+function selectPaket(id, el) {
+  document.querySelectorAll('.paket-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  activeDetail = id;
+  renderDetailPaket(id);
+}
+
+function renderDetailPaket(id) {
+  const p = PAKET.find(x => x.id === id);
+  const jadwal = p.jadwal_group === 'A' ? JADWAL_A : JADWAL_B;
+  const sorted = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+
+  const html = `
+  <div class="two-col" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Ruas ${p.no_ruas} — ${p.nama}</div>
+          <div style="font-size:11px;color:var(--abu);margin-top:2px">${p.lokasi} &nbsp;|&nbsp; DAK TA 2026</div>
+        </div>
+        <a href="https://spse.inaproc.id/karanganyarkab/lelang/${p.kode_tender}/pengumumanlelang" target="_blank" class="link-lpse">↗ Buka di LPSE</a>
+      </div>
+      <div class="card-body">
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-key">Kode Tender</div>
+            <div class="info-val" style="font-family:monospace">${p.kode_tender}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-key">Kode RUP</div>
+            <div class="info-val" style="font-family:monospace">${p.kode_rup}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-key">Tanggal Dibuat</div>
+            <div class="info-val">${p.tgl_buat}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-key">Nilai Pagu</div>
+            <div class="info-val">${fmtRp(p.pagu)}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-key">Nilai HPS</div>
+            <div class="info-val">${fmtRp(p.hps)}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-key">Jenis Kontrak</div>
+            <div class="info-val">${p.jenis_kontrak}</div>
+          </div>
+          <div class="info-item" style="grid-column:1/-1">
+            <div class="info-key">Metode Pengadaan</div>
+            <div class="info-val" style="font-weight:500">${p.metode}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-key">Kualifikasi Usaha</div>
+            <div class="info-val">${p.kualifikasi}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-key">Peserta Mendaftar</div>
+            <div class="info-val">${p.peserta_daftar} penyedia</div>
+          </div>
+          <div class="info-item">
+            <div class="info-key">Memasukkan Penawaran</div>
+            <div class="info-val">${p.penawaran.length} penyedia <span style="font-size:11px;color:var(--abu)">(${Math.round(p.penawaran.length/p.peserta_daftar*100)}% konversi)</span></div>
+          </div>
+          <div class="info-item" style="grid-column:1/-1">
+            <div class="info-key">SBU Dipersyaratkan</div>
+            <div class="info-val">${p.sbu}</div>
+          </div>
+        </div>
+        ${(() => {
+          const winIdx = getPemenang(p.id);
+          const pkIdx = getPemenangBerkontrak(p.id);
+          const idxTampil = pkIdx >= 0 ? pkIdx : winIdx;
+          if (idxTampil < 0) {
+            return `<div class="pemenang-box pemenang-box-kosong">
+              <div class="pemenang-box-label">PEMENANG</div>
+              <div class="pemenang-box-kosong-text">Belum ada pemenang — evaluasi masih berjalan</div>
+            </div>`;
+          }
+          const pemenangX = sorted[idxTampil];
+          const dPemenang = DB[dbKey(p.id, idxTampil)] || {};
+          const alamatPemenang = getAlamat(pemenangX.nama);
+          const isKontrak = pkIdx >= 0;
+          return `<div class="pemenang-box${isKontrak?' pemenang-box-kontrak':''}">
+            <div class="pemenang-box-label">${isKontrak ? '✓ PEMENANG BERKONTRAK' : '★ CALON PEMENANG'}</div>
+            <div class="pemenang-box-nama">${pemenangX.nama}</div>
+            <div class="pemenang-box-row">
+              <span class="pemenang-box-key">Alamat:</span>
+              <span class="pemenang-box-val">${alamatPemenang || '<em style="color:var(--abu)">belum diisi — isi di tab Monitoring Evaluasi</em>'}</span>
+            </div>
+            <div class="pemenang-box-row">
+              <span class="pemenang-box-key">Nilai Kontrak (HN):</span>
+              <span class="pemenang-box-val" style="font-family:monospace">${dPemenang.hasil_negosiasi ? fmtRpFull(dPemenang.hasil_negosiasi) : '<em style="color:var(--abu)">belum nego — pakai PT: ' + fmtRpFull(dPemenang.harga_terkoreksi||pemenangX.harga) + '</em>'}</span>
+            </div>
+          </div>`;
+        })()}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Jadwal Tender — Kelompok ${p.jadwal_group}</div>
+        <span style="font-size:11px;color:var(--abu)">Penetapan pemenang: 26 Jun 2026</span>
+      </div>
+      <div class="card-body" style="padding:12px 16px">
+        <table style="font-size:12px">
+          <thead>
+            <tr>
+              <th style="width:24px">No</th>
+              <th>Tahap</th>
+              <th class="th-right">Mulai</th>
+              <th class="th-right">Sampai</th>
+              <th class="td-center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${jadwal.map((j, i) => {
+              const s = statusTahap(j.mulai, j.sampai);
+              const bc = s === 'selesai' ? 'badge-selesai' : s === 'aktif' ? 'badge-aktif' : 'badge-akan';
+              const bl = s === 'selesai' ? 'Selesai' : s === 'aktif' ? 'Berjalan' : 'Akan datang';
+              return `<tr>
+                <td style="color:var(--abu)">${i+1}</td>
+                <td style="font-weight:${s === 'aktif' ? '600' : '400'};color:${s === 'aktif' ? 'var(--biru)' : 'inherit'}">${j.nama}</td>
+                <td class="td-right" style="font-size:11px;white-space:nowrap">${j.mulai}</td>
+                <td class="td-right" style="font-size:11px;white-space:nowrap">${j.sampai}</td>
+                <td class="td-center"><span class="badge ${bc}" style="font-size:10px">${bl}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Daftar Penawaran — ${p.nama}</div>
+      <span style="font-size:11px;color:var(--abu)">Diurutkan: penawaran terendah</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:32px">Rank</th>
+            <th>Nama Penyedia Jasa</th>
+            <th class="th-right">Harga Penawaran</th>
+            <th class="th-right">Selisih dari HPS</th>
+            <th class="th-right">% Turun dari HPS</th>
+            <th>Visualisasi</th>
+            <th class="td-center">Keterangan</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.map((x, i) => {
+            const pp = pct(x.harga, p.hps);
+            const selisih = x.harga - p.hps;
+            const [bc, bl] = getBadge(pp);
+            const barW = Math.min(Math.abs(pp) * 4, 100);
+            const barColor = pp <= -20 ? '#16A34A' : pp <= -15 ? '#22C55E' : pp <= -10 ? '#CA8A04' : '#DC2626';
+            const isFlag = p.id === 9 && i < 3;
+            return `<tr${isFlag ? ' style="background:#FFFBEB"' : ''}>
+              <td style="font-size:13px;font-weight:700;color:${i===0?'var(--hijau)':i===1?'var(--kuning)':'var(--abu)'}">${i+1}</td>
+              <td style="font-weight:${i===0?'600':'400'}">${x.nama}${isFlag ? ' <span style="font-size:10px;color:#92400E">⚠</span>' : ''}</td>
+              <td class="td-right" style="font-family:monospace;font-size:12px">${fmtRpFull(x.harga)}</td>
+              <td class="td-right" style="font-family:monospace;font-size:12px;color:var(--hijau)">${fmtRp(selisih)}</td>
+              <td class="td-right"><span class="badge ${bc}">${fmtPct(pp)}</span></td>
+              <td style="min-width:120px">
+                <div class="eff-wrap" style="width:120px"><div class="eff-bar" style="width:${barW}%;background:${barColor}"></div></div>
+              </td>
+              <td class="td-center" style="font-size:11px;color:var(--abu)">${i===0?'Terendah':i===sorted.length-1?'Tertinggi':''}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:12px 20px;background:#F9FAFB;border-top:1px solid var(--border);font-size:11px;color:var(--abu)">
+      HPS: <strong>${fmtRpFull(p.hps)}</strong> &nbsp;|&nbsp;
+      Selisih HPS–penawaran terendah: <strong style="color:var(--hijau)">${fmtRp(minPenawaran(p) - p.hps)}</strong> &nbsp;|&nbsp;
+      Efisiensi: <strong style="color:var(--hijau)">${fmtPct(pct(minPenawaran(p), p.hps))}</strong>
+    </div>
+  </div>
+  `;
+
+  document.getElementById('detail-content').innerHTML = html;
+}
+
+// ============================================================
+// RENDER ANALISIS PENYEDIA
+// ============================================================
+function renderPenyedia() {
+  // Kumpulkan semua penyedia
+  const penyediaMap = {};
+  PAKET.forEach(p => {
+    const sorted = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+    sorted.forEach((x, rank) => {
+      const key = x.nama.toLowerCase().replace(/[^a-z]/g,'');
+      if (!penyediaMap[key]) penyediaMap[key] = { nama: x.nama, paket: {} };
+      penyediaMap[key].paket[p.id] = { rank: rank+1, harga: x.harga, hps: p.hps, pct: pct(x.harga, p.hps) };
+    });
+  });
+
+  const sortedPaket = [...PAKET].sort((a,b) => b.hps - a.hps);
+  const penyediaList = Object.values(penyediaMap).sort((a,b) => Object.keys(b.paket).length - Object.keys(a.paket).length);
+
+  // Heatmap header
+  const hmHead = document.getElementById('hm-head');
+  hmHead.innerHTML = `<tr>
+    <th style="min-width:200px">Nama Penyedia</th>
+    <th class="td-center" style="min-width:40px">Σ Paket</th>
+    ${sortedPaket.map(p => `<th class="td-center" style="min-width:50px;font-size:10px;line-height:1.3">${p.no_ruas}<br><span style="font-weight:400">${p.nama.split('–')[0].trim()}</span></th>`).join('')}
+  </tr>`;
+
+  // Heatmap body
+  const hmBody = document.getElementById('hm-body');
+  hmBody.innerHTML = penyediaList.map(pv => {
+    const jumlah = Object.keys(pv.paket).length;
+    const cells = sortedPaket.map(p => {
+      const d = pv.paket[p.id];
+      if (!d) return `<td class="td-center"><span class="hm-cell hm-x">—</span></td>`;
+      const cls = d.rank === 1 ? 'hm-rank1' : d.rank === 2 ? 'hm-rank2' : 'hm-1';
+      return `<td class="td-center"><span class="hm-cell ${cls}" title="${p.nama}: Rank ${d.rank}, ${fmtPct(d.pct)}">${d.rank}</span></td>`;
+    }).join('');
+    return `<tr>
+      <td style="font-size:12px;font-weight:${jumlah>=5?'600':'400'}">${pv.nama}</td>
+      <td class="td-center"><span class="badge${jumlah>=6?' badge-aktif':jumlah>=4?' badge-warning':''}" style="font-size:12px;font-weight:700">${jumlah}</span></td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  // Tabel rekapitulasi
+  const tbody = document.getElementById('tbody-penyedia');
+  tbody.innerHTML = penyediaList.map((pv, i) => {
+    const jumlah = Object.keys(pv.paket).length;
+    const rank1 = Object.values(pv.paket).filter(x => x.rank === 1).length;
+    const rank2 = Object.values(pv.paket).filter(x => x.rank === 2).length;
+    const avgPct = Object.values(pv.paket).reduce((s,x) => s + x.pct, 0) / jumlah;
+    let catatan = '';
+    if (jumlah >= 8) catatan = '<span class="badge badge-aktif">Sangat aktif</span>';
+    else if (jumlah >= 5) catatan = '<span class="badge badge-sedang">Aktif lintas paket</span>';
+    if (pv.nama.toLowerCase().includes('anugerah lima') || pv.nama.toLowerCase().includes('karya utama')) {
+      catatan += ' <span class="badge badge-rendah">Kompetitif</span>';
+    }
+    return `<tr>
+      <td style="color:var(--abu)">${i+1}</td>
+      <td style="font-weight:${jumlah>=5?'600':'400'};font-size:13px">${pv.nama}</td>
+      <td class="td-center"><strong>${jumlah}</strong> / 10</td>
+      <td class="td-center" style="color:var(--hijau);font-weight:700">${rank1}</td>
+      <td class="td-center" style="color:var(--kuning);font-weight:600">${rank2}</td>
+      <td class="td-right"><span class="badge ${getBadge(avgPct)[0]}">${fmtPct(avgPct)}</span></td>
+      <td>${catatan}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// TAB SWITCHER (updated)
+// ============================================================
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(e => e.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ============================================================
+// FIREBASE — realtime sync (project: monitoring-bpk-binamarga)
+// Collection baru "lpse_dak_2026", tidak bersinggungan dengan
+// data BPK audit yang sudah ada di project Firebase yang sama.
+// Akses bebas tanpa login, realtime: setiap perubahan field
+// langsung tersimpan ke Firestore dan tersiar ke device lain
+// yang membuka halaman ini secara bersamaan.
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyCw3RYTpfk0MGaMlFKr4mDsJWmbQhp0YMM",
+  authDomain: "monitoring-bpk-binamarga.firebaseapp.com",
+  projectId: "monitoring-bpk-binamarga",
+  storageBucket: "monitoring-bpk-binamarga.firebasestorage.app",
+  messagingSenderId: "389461655576",
+  appId: "1:389461655576:web:ea4712dafd40142c1cc36d"
+};
+
+let fsDB = null;
+let fsDocRef = null;
+let fsReady = false;
+let fsSaveTimer = null;
+let fsApplyingRemote = false; // flag agar tidak loop saat menerima update dari remote
+
+function fbInit() {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    fsDB = firebase.firestore();
+    fsDocRef = fsDB.collection('lpse_dak_2026').doc('monitoring_evaluasi');
+    fbSetStatus('connecting');
+
+    fsDocRef.onSnapshot(snap => {
+      fsReady = true;
+      if (snap.exists) {
+        const data = snap.data();
+        fsApplyingRemote = true;
+        if (data.DB) DB = data.DB;
+        if (data.ALAMAT_PENYEDIA) ALAMAT_PENYEDIA = data.ALAMAT_PENYEDIA;
+        initDB(); // lengkapi field yang mungkin belum ada (migrasi struktur baru)
+        renderMonitoring();
+        refreshAllViews();
+        if (typeof activeDetail !== 'undefined' && activeDetail !== null) renderDetailPaket(activeDetail);
+        fsApplyingRemote = false;
+        fbSetStatus('synced', data.disimpanOleh, data.disimpanPada);
+      } else {
+        // Dokumen belum ada — buat dari data lokal saat ini (termasuk data awal LPSE)
+        fbSaveNow();
+        fbSetStatus('synced');
+      }
+    }, err => {
+      console.error('Firestore listen error:', err);
+      fbSetStatus('error');
+    });
+  } catch (err) {
+    console.error('Firebase init error:', err);
+    fbSetStatus('error');
+  }
+}
+
+function fbSetStatus(state, oleh, pada) {
+  const el = document.getElementById('fb-status');
+  if (!el) return;
+  if (state === 'connecting') {
+    el.innerHTML = '&#128260; Menghubungkan ke cloud...';
+    el.className = 'db-status fb-connecting';
+  } else if (state === 'synced') {
+    el.innerHTML = '&#9679; Tersambung ke cloud — realtime aktif';
+    el.className = 'db-status fb-synced';
+  } else if (state === 'saving') {
+    el.innerHTML = '&#8634; Menyimpan...';
+    el.className = 'db-status fb-connecting';
+  } else if (state === 'error') {
+    el.innerHTML = '&#9888; Gagal tersambung ke cloud — perubahan hanya tersimpan lokal';
+    el.className = 'db-status fb-error';
+  }
+}
+
+// Debounced — menghindari kirim ke Firestore terlalu sering saat mengetik beruntun
+function fbScheduleSave() {
+  if (fsApplyingRemote) return; // jangan kirim balik data yang baru diterima dari remote
+  if (fsSaveTimer) clearTimeout(fsSaveTimer);
+  fbSetStatus('saving');
+  fsSaveTimer = setTimeout(fbSaveNow, 600);
+}
+
+function fbSaveNow() {
+  if (!fsDocRef) return;
+  fsDocRef.set({
+    DB: DB,
+    ALAMAT_PENYEDIA: ALAMAT_PENYEDIA,
+    disimpanPada: new Date().toLocaleString('id-ID')
+  }, { merge: true }).then(() => {
+    fbSetStatus('synced');
+  }).catch(err => {
+    console.error('Firestore save error:', err);
+    fbSetStatus('error');
+  });
+}
+
+// ============================================================
+// DATABASE
+// ============================================================
+let DB = {};
+
+// Alamat disimpan terpisah, per NAMA PENYEDIA (bukan per paket), supaya
+// satu CV yang ikut banyak paket cukup diisi alamatnya sekali (auto-sync).
+let ALAMAT_PENYEDIA = {};
+
+function namaKey(nama) {
+  return String(nama || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function getAlamat(nama) {
+  return ALAMAT_PENYEDIA[namaKey(nama)] || '';
+}
+
+function setAlamat(nama, alamat) {
+  ALAMAT_PENYEDIA[namaKey(nama)] = alamat;
+  fbScheduleSave();
+}
+
+function dbKey(paketId, idx) { return paketId + '_' + idx; }
+
+function initDB() {
+  PAKET.forEach(p => {
+    const s = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+    s.forEach((x, i) => {
+      const k = dbKey(p.id, i);
+      if (!DB[k]) DB[k] = {
+        paket_id: p.id, peserta_idx: i, nama: x.nama,
+        harga_penawaran: x.harga, harga_terkoreksi: x.harga,
+        hasil_negosiasi: null,
+        status_adm: 'belum', status_kualifikasi: 'belum',
+        status_teknis: 'belum', status_harga: 'belum',
+        status_pembuktian: 'belum', keterangan: '',
+        pemenang_berkontrak: 'belum'
+      };
+      // Migrasi data lama yang belum punya field baru
+      if (DB[k].hasil_negosiasi === undefined) DB[k].hasil_negosiasi = null;
+      if (DB[k].pemenang_berkontrak === undefined) DB[k].pemenang_berkontrak = 'belum';
+    });
+    if (!DB['sanggah_'+p.id]) DB['sanggah_'+p.id] = { ada:'tidak', isi:'' };
+    if (!DB['catatan_'+p.id]) DB['catatan_'+p.id] = '';
+  });
+}
+
+function getPemenang(paketId) {
+  const p = PAKET.find(x => x.id === paketId);
+  const s = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+  const EVAL = ['status_adm','status_kualifikasi','status_teknis','status_harga','status_pembuktian'];
+  for (let i = 0; i < s.length; i++) {
+    const d = DB[dbKey(paketId, i)];
+    if (d && EVAL.every(f => d[f] === 'lulus')) return i;
+  }
+  return -1;
+}
+
+function getPemenangBerkontrak(paketId) {
+  const p = PAKET.find(x => x.id === paketId);
+  const s = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+  for (let i = 0; i < s.length; i++) {
+    const d = DB[dbKey(paketId, i)];
+    if (d && d.pemenang_berkontrak === 'ya') return i;
+  }
+  return -1;
+}
+
+// ============================================================
+// DOWNLOAD EXCEL
+// ============================================================
+function downloadExcel() {
+  const wb = XLSX.utils.book_new();
+
+  // ---- SHEET 1: MONITORING EVALUASI ----
+  const evalHeader = [
+    'Kode Tender','No Ruas','Nama Paket','Rank','Nama Penyedia','Alamat',
+    'Harga Penawaran (P)','Penawaran Terkoreksi (PT)','Hasil Negosiasi (HN)',
+    'Status Adm (A)','Status Kualifikasi (K)','Status Teknis (T)','Status Harga (H)','Status Pembuktian (B)',
+    'Keterangan / Alasan','Calon Pemenang','Pemenang Berkontrak (PK)'
+  ];
+  const evalRows = [evalHeader];
+  PAKET.forEach(p => {
+    const ps = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+    const winIdx = getPemenang(p.id);
+    ps.forEach((x, i) => {
+      const d = DB[dbKey(p.id, i)] || {};
+      evalRows.push([
+        p.kode_tender,
+        p.no_ruas,
+        p.nama,
+        i + 1,
+        x.nama,
+        getAlamat(x.nama),
+        x.harga,
+        d.harga_terkoreksi || x.harga,
+        d.hasil_negosiasi === null || d.hasil_negosiasi === undefined ? '' : d.hasil_negosiasi,
+        d.status_adm || 'belum',
+        d.status_kualifikasi || 'belum',
+        d.status_teknis || 'belum',
+        d.status_harga || 'belum',
+        d.status_pembuktian || 'belum',
+        d.keterangan || '',
+        winIdx === i ? 'YA ★' : '',
+        d.pemenang_berkontrak === 'ya' ? 'YA' : ''
+      ]);
+    });
+    evalRows.push([]); // baris pemisah antar paket
+  });
+
+  const wsEval = XLSX.utils.aoa_to_sheet(evalRows);
+  // Lebar kolom
+  wsEval['!cols'] = [
+    {wch:16},{wch:8},{wch:28},{wch:6},{wch:32},{wch:34},
+    {wch:20},{wch:20},{wch:20},
+    {wch:14},{wch:14},{wch:12},{wch:12},{wch:14},
+    {wch:36},{wch:14},{wch:18}
+  ];
+  // Style header (bold) — SheetJS CE tidak mendukung style, tapi struktur terbaca baik di Excel
+  XLSX.utils.book_append_sheet(wb, wsEval, 'Monitoring Evaluasi');
+
+  // ---- SHEET 2: SANGGAH & CATATAN ----
+  const sanggahHeader = ['Kode Tender','No Ruas','Nama Paket','Ada Sanggah','Isi Sanggah','Catatan Paket'];
+  const sanggahRows = [sanggahHeader];
+  PAKET.forEach(p => {
+    const sg = DB['sanggah_'+p.id] || {ada:'tidak', isi:''};
+    const cat = DB['catatan_'+p.id] || '';
+    sanggahRows.push([p.kode_tender, p.no_ruas, p.nama, sg.ada, sg.isi, cat]);
+  });
+  const wsSanggah = XLSX.utils.aoa_to_sheet(sanggahRows);
+  wsSanggah['!cols'] = [{wch:16},{wch:8},{wch:28},{wch:14},{wch:40},{wch:40}];
+  XLSX.utils.book_append_sheet(wb, wsSanggah, 'Sanggah & Catatan');
+
+  // ---- SHEET 3: DATA PAKET (referensi, read-only) ----
+  const paketHeader = ['Kode Tender','Kode RUP','No Ruas','Nama Paket','Lokasi','Pagu','HPS','Metode','Kualifikasi','Peserta Daftar','Peserta Penawaran','Jadwal Kelompok'];
+  const paketRows = [paketHeader];
+  PAKET.forEach(p => {
+    paketRows.push([
+      p.kode_tender, p.kode_rup, p.no_ruas, p.nama, p.lokasi,
+      p.pagu, p.hps, p.metode, p.kualifikasi,
+      p.peserta_daftar, p.penawaran.length, p.jadwal_group
+    ]);
+  });
+  const wsPaket = XLSX.utils.aoa_to_sheet(paketRows);
+  wsPaket['!cols'] = [{wch:16},{wch:12},{wch:8},{wch:28},{wch:20},{wch:16},{wch:16},{wch:50},{wch:12},{wch:14},{wch:16},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, wsPaket, 'Data Paket (Referensi)');
+
+  // ---- SHEET 4: PETUNJUK ----
+  const petunjukData = [
+    ['PETUNJUK PENGGUNAAN FILE EXCEL MONITORING LPSE DAK 2026'],
+    [''],
+    ['Sheet "Monitoring Evaluasi" — kesesuaian istilah dengan LPSE SPSE:'],
+    ['  - Alamat                      = alamat penyedia jasa. AUTO-SYNC: isi sekali untuk satu CV, otomatis berlaku di SEMUA paket yang diikuti CV tersebut (dicocokkan berdasarkan nama)'],
+    ['  - Penawaran Terkoreksi (PT)  = nilai penawaran setelah koreksi aritmatik'],
+    ['  - Hasil Negosiasi (HN)       = nilai akhir hasil negosiasi harga (isi jika ada, kosongkan jika belum). Dipakai sebagai basis perhitungan Selisih & % Turun di tab Ringkasan Eksekutif'],
+    ['  - Status Adm (A)             = Evaluasi Administrasi'],
+    ['  - Status Kualifikasi (K)     = Evaluasi Kualifikasi'],
+    ['  - Status Teknis (T)          = Evaluasi Teknis'],
+    ['  - Status Harga (H)           = Evaluasi Harga/Biaya'],
+    ['  - Status Pembuktian (B)      = Pembuktian Kualifikasi'],
+    ['  - Pemenang Berkontrak (PK)   = isi YA hanya setelah kontrak resmi ditandatangani'],
+    [''],
+    ['Cara isi kolom status (A/K/T/H/B): belum / lulus / gugur (huruf kecil, tanpa spasi)'],
+    ['Kolom "Calon Pemenang" terisi otomatis: peserta dengan harga termurah yang LULUS SEMUA tahap A/K/T/H/B'],
+    ['Kolom "Pemenang Berkontrak": isi YA secara manual hanya setelah SPPBJ/kontrak resmi terbit'],
+    ['PENTING — Alamat: jika satu CV (misal "CV. Anugerah Lima Utama") muncul di beberapa baris/paket, cukup isi alamatnya SEKALI saja di baris manapun — saat di-upload, alamat itu otomatis tersinkron ke semua baris dengan nama yang sama'],
+    [''],
+    ['JANGAN ubah: Kode Tender, No Ruas, Nama Paket, Rank, Nama Penyedia, Harga Penawaran (P)'],
+    [''],
+    ['Sheet "Sanggah & Catatan":'],
+    ['  - Kolom "Ada Sanggah": tidak / ada / selesai'],
+    ['  - Kolom "Isi Sanggah" dan "Catatan Paket" bebas diisi'],
+    [''],
+    ['Sheet "Data Paket (Referensi)":'],
+    ['  - Sheet ini hanya referensi, JANGAN diedit'],
+    [''],
+    ['Cara update:'],
+    ['  1. Download Excel dari aplikasi'],
+    ['  2. Cocokkan dengan tab "Hasil Evaluasi" di LPSE SPSE (kolom K, B, A, T, P, PT, HN, H, P/Pemenang, PK, Alasan)'],
+    ['  3. Update isian di sheet Monitoring Evaluasi dan Sanggah & Catatan'],
+    ['  4. Simpan file Excel'],
+    ['  5. Upload kembali ke aplikasi via tombol "Upload Excel"'],
+    ['  6. Data monitoring di aplikasi akan langsung terupdate'],
+  ];
+  const wsPetunjuk = XLSX.utils.aoa_to_sheet(petunjukData);
+  wsPetunjuk['!cols'] = [{wch:95}];
+  XLSX.utils.book_append_sheet(wb, wsPetunjuk, 'Petunjuk');
+
+  // Generate file
+  const tgl = new Date();
+  const tglStr = `${tgl.getFullYear()}${String(tgl.getMonth()+1).padStart(2,'0')}${String(tgl.getDate()).padStart(2,'0')}`;
+  const jamStr = `${String(tgl.getHours()).padStart(2,'0')}${String(tgl.getMinutes()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `Monitoring_LPSE_DAK2026_${tglStr}_${jamStr}.xlsx`);
+
+  showToast('&#11015; Excel berhasil diunduh', 'success');
+}
+
+// ============================================================
+// UPLOAD EXCEL
+// ============================================================
+function uploadExcel(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+
+      // Baca sheet Monitoring Evaluasi
+      const wsEval = wb.Sheets['Monitoring Evaluasi'];
+      if (!wsEval) throw new Error('Sheet "Monitoring Evaluasi" tidak ditemukan');
+      const evalData = XLSX.utils.sheet_to_json(wsEval, { defval: '' });
+
+      // Baca sheet Sanggah & Catatan
+      const wsSanggah = wb.Sheets['Sanggah & Catatan'];
+      const sanggahData = wsSanggah ? XLSX.utils.sheet_to_json(wsSanggah, { defval: '' }) : [];
+
+      let updated = 0, skipped = 0;
+
+      // Proses baris evaluasi
+      evalData.forEach(row => {
+        const kode = String(row['Kode Tender'] || '').trim();
+        const rank = parseInt(row['Rank']);
+        if (!kode || isNaN(rank)) { skipped++; return; }
+
+        const p = PAKET.find(x => x.kode_tender === kode);
+        if (!p) { skipped++; return; }
+
+        const idx = rank - 1;
+        const k = dbKey(p.id, idx);
+        if (!DB[k]) { skipped++; return; }
+
+        const validStatus = ['belum','lulus','gugur'];
+        const clean = v => {
+          const s = String(v||'').toLowerCase().trim().replace(/[✓✗★\s]/g,'');
+          return validStatus.includes(s) ? s : 'belum';
+        };
+
+        // Dukung nama kolom lama maupun baru (dengan singkatan LPSE)
+        const ptVal = row['Penawaran Terkoreksi (PT)'] ?? row['Harga Terkoreksi'];
+        const hnVal = row['Hasil Negosiasi (HN)'] ?? row['Hasil Negosiasi'];
+        const pkVal = row['Pemenang Berkontrak (PK)'] ?? row['Pemenang Berkontrak'];
+        const alamatVal = row['Alamat'];
+
+        DB[k].harga_terkoreksi = parseFloat(ptVal) || DB[k].harga_penawaran;
+        const hnNum = parseFloat(hnVal);
+        DB[k].hasil_negosiasi = (hnVal === '' || hnVal === undefined || isNaN(hnNum)) ? null : hnNum;
+        DB[k].status_adm = clean(row['Status Adm (A)'] ?? row['Status Adm']);
+        DB[k].status_kualifikasi = clean(row['Status Kualifikasi (K)'] ?? row['Status Kualifikasi']);
+        DB[k].status_teknis = clean(row['Status Teknis (T)'] ?? row['Status Teknis']);
+        DB[k].status_harga = clean(row['Status Harga (H)'] ?? row['Status Harga']);
+        DB[k].status_pembuktian = clean(row['Status Pembuktian (B)'] ?? row['Status Pembuktian']);
+        DB[k].keterangan = String(row['Keterangan / Alasan'] ?? row['Keterangan'] ?? '').trim();
+        const pkClean = String(pkVal||'').toLowerCase().trim();
+        DB[k].pemenang_berkontrak = (pkClean === 'ya' || pkClean === 'yes' || pkClean === 'y') ? 'ya' : 'belum';
+        // Alamat disimpan terpisah, auto-sync ke semua paket dengan nama yang sama
+        if (alamatVal !== undefined && String(alamatVal).trim() !== '') {
+          setAlamat(row['Nama Penyedia'], String(alamatVal).trim());
+        }
+        updated++;
+      });
+
+      // Proses sanggah
+      sanggahData.forEach(row => {
+        const kode = String(row['Kode Tender'] || '').trim();
+        const p = PAKET.find(x => x.kode_tender === kode);
+        if (!p) return;
+        const ada = String(row['Ada Sanggah']||'tidak').toLowerCase().trim();
+        DB['sanggah_'+p.id] = {
+          ada: ['tidak','ada','selesai'].includes(ada) ? ada : 'tidak',
+          isi: String(row['Isi Sanggah']||'').trim()
+        };
+        DB['catatan_'+p.id] = String(row['Catatan Paket']||'').trim();
+      });
+
+      renderMonitoring();
+      refreshAllViews();
+      fbScheduleSave();
+      showToast(`&#11014; Berhasil: ${updated} baris diperbarui, ${skipped} dilewati (tersinkron ke cloud)`, 'success');
+
+    } catch(err) {
+      showToast('&#9888; Gagal baca Excel: ' + err.message, 'error');
+    }
+  };
+  reader.readAsBinaryString(file);
+  event.target.value = '';
+}
+
+// ============================================================
+// RESET
+// ============================================================
+function konfirmasiReset() {
+  if (confirm('Reset semua data monitoring ke kondisi awal?\nPerubahan ini juga akan tersinkron ke cloud (Firebase) untuk semua yang membuka halaman ini.\nPastikan sudah download Excel backup terlebih dahulu.')) {
+    DB = {}; ALAMAT_PENYEDIA = {}; initDB(); renderMonitoring(); refreshAllViews();
+    fbScheduleSave();
+    showToast('&#8635; Data monitoring direset', 'success');
+  }
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.innerHTML = msg; t.className = 'toast ' + (type||'');
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Memanggil ulang semua bagian yang basisnya bisa berubah karena HN/status:
+// Ringkasan (tabel + metric cards) dan kedua chart. Dipanggil setiap kali
+// ada perubahan data yang berpotensi mengubah Selisih/% Turun/grafik HN.
+function refreshAllViews() {
+  renderRingkasan();
+  renderMetrics();
+  renderChart();
+}
+
+// ============================================================
+// SAVE FIELD HANDLERS
+// ============================================================
+function saveField(paketId, idx, field, value) {
+  const k = dbKey(paketId, idx);
+  if (DB[k]) {
+    DB[k][field] = value;
+    fbScheduleSave();
+    if (field === 'pemenang_berkontrak') {
+      // Perlu re-render penuh karena badge PK & nama di header berubah
+      renderMonitoring();
+      refreshAllViews();
+      return;
+    }
+    if (field === 'hasil_negosiasi') {
+      // HN berubah -> Ringkasan, metric cards, dan chart HN perlu di-refresh
+      const el = document.getElementById('sel_'+paketId+'_'+idx+'_'+field);
+      if (el) el.className = 'status-select ' + selectClass(el.value);
+      refreshPemenangRow(paketId);
+      renderMonProgress();
+      refreshAllViews();
+      return;
+    }
+    const el = document.getElementById('sel_'+paketId+'_'+idx+'_'+field);
+    if (el) el.className = 'status-select ' + selectClass(el.value);
+    refreshPemenangRow(paketId);
+    renderMonProgress();
+    refreshRingkasanStatus(paketId);
+    // Status A/K/T/H/B bisa mengubah siapa pemenang -> HN basis ikut berubah
+    refreshAllViews();
+  }
+}
+function saveSanggah(paketId, field, value) {
+  if (DB['sanggah_'+paketId]) { DB['sanggah_'+paketId][field] = value; fbScheduleSave(); }
+}
+function saveCatatan(paketId, value) {
+  DB['catatan_'+paketId] = value;
+  fbScheduleSave();
+}
+
+function saveAlamat(nama, alamat) {
+  setAlamat(nama, alamat); // sudah memanggil fbScheduleSave() di dalamnya
+  // Auto-sync: re-render monitoring supaya semua baris dengan nama sama
+  // ikut menampilkan alamat baru, dan re-render detail paket jika sedang
+  // menampilkan paket yang melibatkan penyedia ini.
+  renderMonitoring();
+  renderRingkasan();
+  if (typeof activeDetail !== 'undefined' && activeDetail !== null && document.getElementById('detail-content').innerHTML) {
+    renderDetailPaket(activeDetail);
+  }
+  showToast('&#128205; Alamat tersinkron untuk "' + nama + '" di semua paket (cloud)', 'success');
+}
+
+function selectClass(v) { return v==='lulus'?'status-lulus':v==='gugur'?'status-gugur':'status-belum'; }
+
+function refreshPemenangRow(paketId) {
+  const p = PAKET.find(x => x.id === paketId);
+  const s = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+  const winIdx = getPemenang(paketId);
+  const pkIdx = getPemenangBerkontrak(paketId);
+  s.forEach((_,i) => {
+    const row = document.getElementById('mon-row-'+paketId+'-'+i);
+    const star = document.getElementById('star-'+paketId+'-'+i);
+    if (!row||!star) return;
+    row.className = winIdx===i ? 'pemenang-row' : '';
+    star.innerHTML = winIdx===i ? '<span class="pemenang-star" title="Calon Pemenang (otomatis)">&#9733;</span>' : '';
+  });
+  // Update header: prioritas tampilkan Pemenang Berkontrak jika sudah ada
+  const hdr = document.getElementById('pemenang-hdr-'+paketId);
+  if (hdr) {
+    hdr.innerHTML = pkIdx>=0
+      ? `<div style="background:rgba(255,255,255,0.15);padding:6px 14px;border-radius:8px;font-size:12px;color:#6EE7B7;font-weight:700">✓ Pemenang Berkontrak: ${s[pkIdx].nama}</div>`
+      : winIdx>=0
+        ? `<div style="background:rgba(255,255,255,0.15);padding:6px 14px;border-radius:8px;font-size:12px;color:#FDE68A;font-weight:700">&#9733; Calon Pemenang: ${s[winIdx].nama}</div>`
+        : '';
+  }
+}
+
+function refreshRingkasanStatus(paketId) {
+  const p = PAKET.find(x => x.id === paketId);
+  const winIdx = getPemenang(p.id);
+  const el = document.getElementById('rstatus-'+paketId);
+  if (!el) return;
+  const s = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+  el.innerHTML = winIdx>=0
+    ? `<span class="badge badge-selesai" style="font-size:10px">&#9733; ${s[winIdx].nama.split(' ').slice(0,3).join(' ')}</span>`
+    : `<span class="badge badge-aktif" style="font-size:10px">Evaluasi</span>`;
+}
+
+// ============================================================
+// RENDER MONITORING
+// ============================================================
+const EVAL_FIELDS = [
+  {field:'status_adm',label:'Adm.'},
+  {field:'status_kualifikasi',label:'Kualifikasi'},
+  {field:'status_teknis',label:'Teknis'},
+  {field:'status_harga',label:'Harga'},
+  {field:'status_pembuktian',label:'Pembuktian'},
+];
+const STATUS_OPTS = [{val:'belum',label:'— Belum'},{val:'lulus',label:'✓ Lulus'},{val:'gugur',label:'✗ Gugur'}];
+
+function renderMonProgress() {
+  let total=0,lulus=0,gugur=0,belum=0,pemenang=0;
+  PAKET.forEach(p => {
+    const s = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+    total += s.length;
+    s.forEach((_,i) => {
+      const d = DB[dbKey(p.id,i)]; if(!d) return;
+      const allL = EVAL_FIELDS.every(f => d[f.field]==='lulus');
+      const anyG = EVAL_FIELDS.some(f => d[f.field]==='gugur');
+      if(allL) lulus++; else if(anyG) gugur++; else belum++;
+    });
+    if(getPemenang(p.id)>=0) pemenang++;
+  });
+  const el = document.getElementById('mon-progress'); if(!el) return;
+  el.innerHTML = `
+    <div class="sp-card"><div class="sp-num" style="color:var(--biru)">${total}</div><div class="sp-label">Total peserta penawaran</div></div>
+    <div class="sp-card"><div class="sp-num" style="color:var(--abu)">${belum}</div><div class="sp-label">Belum dievaluasi</div></div>
+    <div class="sp-card"><div class="sp-num" style="color:var(--hijau)">${lulus}</div><div class="sp-label">Lulus semua tahap</div></div>
+    <div class="sp-card"><div class="sp-num" style="color:var(--merah)">${gugur}</div><div class="sp-label">Gugur (min. 1 tahap)</div></div>
+    <div class="sp-card"><div class="sp-num" style="color:#D97706">&#9733; ${pemenang}</div><div class="sp-label">Paket ada calon pemenang</div></div>`;
+}
+
+function renderMonitoring() {
+  renderMonProgress();
+  const sortedPaket = [...PAKET].sort((a,b) => b.hps - a.hps);
+  document.getElementById('mon-content').innerHTML = sortedPaket.map(p => {
+    const ps = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+    const winIdx = getPemenang(p.id);
+    const sanggah = DB['sanggah_'+p.id] || {ada:'tidak',isi:''};
+    const catatan = DB['catatan_'+p.id] || '';
+    let jL=0,jG=0,jB=0;
+    ps.forEach((_,i) => {
+      const d = DB[dbKey(p.id,i)]||{};
+      const allL = EVAL_FIELDS.every(f=>d[f.field]==='lulus');
+      const anyG = EVAL_FIELDS.some(f=>d[f.field]==='gugur');
+      if(allL) jL++; else if(anyG) jG++; else jB++;
+    });
+    const rows = ps.map((x,i) => {
+      const d = DB[dbKey(p.id,i)]||{};
+      const isW = winIdx===i;
+      const isPK = d.pemenang_berkontrak === 'ya';
+      const pp = pct(x.harga, p.hps);
+      const hrT = d.harga_terkoreksi||x.harga;
+      const hrHN = d.hasil_negosiasi;
+      const alamat = getAlamat(x.nama);
+      const evalCols = EVAL_FIELDS.map(ef => {
+        const v = d[ef.field]||'belum';
+        return `<td class="td-center"><select id="sel_${p.id}_${i}_${ef.field}" class="status-select ${selectClass(v)}" onchange="saveField(${p.id},${i},'${ef.field}',this.value)">${STATUS_OPTS.map(o=>`<option value="${o.val}"${v===o.val?' selected':''}>${o.label}</option>`).join('')}</select></td>`;
+      }).join('');
+      return `<tr id="mon-row-${p.id}-${i}" class="${isW?'pemenang-row':''}">
+        <td class="td-center" id="star-${p.id}-${i}">${isW?'<span class="pemenang-star" title="Calon Pemenang (otomatis)">&#9733;</span>':''}</td>
+        <td class="td-center" style="font-weight:700;color:${i===0?'var(--hijau)':'var(--abu)'}">${i+1}</td>
+        <td style="font-weight:${i===0?'600':'400'};white-space:nowrap">${x.nama}${isPK?' <span class="pk-badge" title="Pemenang Berkontrak">PK</span>':''}</td>
+        <td><input type="text" class="ket-input alamat-input" placeholder="Alamat (auto-sync semua paket)..." value="${alamat.replace(/"/g,'&quot;')}" onchange="saveAlamat('${x.nama.replace(/'/g,"\\'")}',this.value)" title="Alamat tersinkron otomatis untuk nama penyedia yang sama di semua paket"></td>
+        <td class="td-right" style="font-family:monospace;font-size:11px;white-space:nowrap">${fmtRpFull(x.harga)}</td>
+        <td class="td-center"><input type="number" class="harga-terkoreksi-input" value="${hrT}" onchange="saveField(${p.id},${i},'harga_terkoreksi',parseFloat(this.value)||${x.harga})" title="PT — Penawaran Terkoreksi"></td>
+        <td class="td-center"><input type="number" class="harga-terkoreksi-input" value="${hrHN===null||hrHN===undefined?'':hrHN}" placeholder="—" onchange="saveField(${p.id},${i},'hasil_negosiasi',this.value===''?null:(parseFloat(this.value)||null))" title="HN — Hasil Negosiasi"></td>
+        <td class="td-center"><span class="badge ${getBadge(pp)[0]}">${fmtPct(pp)}</span></td>
+        ${evalCols}
+        <td class="td-center">
+          <select class="status-select ${isPK?'status-lulus':'status-belum'}" onchange="saveField(${p.id},${i},'pemenang_berkontrak',this.value)" title="PK — Pemenang Berkontrak">
+            <option value="belum"${!isPK?' selected':''}>— Belum</option>
+            <option value="ya"${isPK?' selected':''}>✓ Ya (PK)</option>
+          </select>
+        </td>
+        <td><input type="text" class="ket-input" placeholder="Alasan / keterangan..." value="${(d.keterangan||'').replace(/"/g,'&quot;')}" onchange="saveField(${p.id},${i},'keterangan',this.value)"></td>
+      </tr>`;
+    }).join('');
+    return `<div class="mon-section">
+      <div class="mon-paket-header">
+        <div>
+          <div class="mon-paket-title">Ruas ${p.no_ruas} — ${p.nama}</div>
+          <div class="mon-paket-meta">HPS: ${fmtRp(p.hps)} &nbsp;|&nbsp; ${ps.length} peserta &nbsp;|&nbsp; ${p.kode_tender} &nbsp;|&nbsp;
+            <a href="https://spse.inaproc.id/karanganyarkab/lelang/${p.kode_tender}/pengumumanlelang" target="_blank" style="color:#93C5FD">↗ LPSE</a></div>
+        </div>
+        <div id="pemenang-hdr-${p.id}">
+          ${getPemenangBerkontrak(p.id)>=0
+            ? `<div style="background:rgba(255,255,255,0.15);padding:6px 14px;border-radius:8px;font-size:12px;color:#6EE7B7;font-weight:700">✓ Pemenang Berkontrak: ${ps[getPemenangBerkontrak(p.id)].nama}</div>`
+            : winIdx>=0
+              ? `<div style="background:rgba(255,255,255,0.15);padding:6px 14px;border-radius:8px;font-size:12px;color:#FDE68A;font-weight:700">&#9733; Calon Pemenang: ${ps[winIdx].nama}</div>`
+              : ''}
+        </div>
+      </div>
+      <div class="mon-table-wrap">
+        <div style="overflow-x:auto"><table class="mon-table">
+          <thead><tr>
+            <th style="width:28px"></th><th class="td-center">Rank</th><th>Nama Penyedia Jasa</th>
+            <th>Alamat</th>
+            <th class="th-right">Harga Penawaran (P)</th><th class="td-center">Terkoreksi (PT)</th>
+            <th class="td-center">Negosiasi (HN)</th>
+            <th class="td-center">% HPS</th>
+            <th class="td-center">Adm. (A)</th><th class="td-center">Kualifikasi (K)</th>
+            <th class="td-center">Teknis (T)</th><th class="td-center">Harga (H)</th><th class="td-center">Pembuktian (B)</th>
+            <th class="td-center">PK</th>
+            <th>Keterangan / Alasan</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+        <div class="sanggah-wrap">
+          <span class="sanggah-label">&#9888; Sanggah:</span>
+          <select class="sanggah-select" onchange="saveSanggah(${p.id},'ada',this.value)">
+            <option value="tidak"${sanggah.ada==='tidak'?' selected':''}>Tidak ada sanggah</option>
+            <option value="ada"${sanggah.ada==='ada'?' selected':''}>Ada sanggah</option>
+            <option value="selesai"${sanggah.ada==='selesai'?' selected':''}>Sanggah selesai</option>
+          </select>
+          <input type="text" class="sanggah-input" placeholder="Isi / catatan sanggah..." value="${(sanggah.isi||'').replace(/"/g,'&quot;')}" onchange="saveSanggah(${p.id},'isi',this.value)">
+          <span style="margin-left:auto;font-size:11px;color:#92400E">Catatan:</span>
+          <input type="text" style="font-size:11px;padding:4px 10px;border-radius:5px;border:1px solid #FCD34D;width:240px" placeholder="Catatan umum paket..." value="${(catatan||'').replace(/"/g,'&quot;')}" onchange="saveCatatan(${p.id},this.value)">
+        </div>
+        <div class="mon-summary">
+          <span class="mon-stat"><span class="mon-dot" style="background:#6B7280"></span>&nbsp;Belum: <strong>${jB}</strong></span>
+          <span class="mon-stat"><span class="mon-dot" style="background:#16A34A"></span>&nbsp;Lulus semua: <strong>${jL}</strong></span>
+          <span class="mon-stat"><span class="mon-dot" style="background:#DC2626"></span>&nbsp;Gugur: <strong>${jG}</strong></span>
+          <span style="margin-left:auto;font-size:11px;color:var(--abu)">&#128197; Penetapan pemenang: 26 Juni 2026</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// RINGKASAN — dengan status pemenang dari DB
+// ============================================================
+// ============================================================
+// RENDER METRIC CARDS (dinamis, basis HN dengan fallback penawaran terendah)
+// ============================================================
+function renderMetrics() {
+  let totalPagu = 0, totalHPS = 0, totalBasis = 0, sumPct = 0;
+  PAKET.forEach(p => {
+    totalPagu += p.pagu;
+    totalHPS += p.hps;
+    const hn = getHargaNegosiasi(p);
+    const basis = hn !== null ? hn : minPenawaran(p);
+    totalBasis += basis;
+    sumPct += pct(basis, p.hps);
+  });
+  const efisiensi = totalHPS - totalBasis;
+  const rerataPct = sumPct / PAKET.length;
+  const adaBelumNego = PAKET.some(p => getHargaNegosiasi(p) === null);
+
+  const elPagu = document.getElementById('metric-pagu');
+  const elHps = document.getElementById('metric-hps');
+  const elEfisiensi = document.getElementById('metric-efisiensi');
+  const elTurun = document.getElementById('metric-turun');
+  const elEfisiensiSub = document.getElementById('metric-efisiensi-sub');
+  const elTurunSub = document.getElementById('metric-turun-sub');
+  if (elPagu) elPagu.innerHTML = `Rp ${(totalPagu/1e9).toFixed(2)} <span class="metric-unit">miliar</span>`;
+  if (elHps) elHps.innerHTML = `Rp ${(totalHPS/1e9).toFixed(2)} <span class="metric-unit">miliar</span>`;
+  if (elEfisiensi) elEfisiensi.innerHTML = `Rp ${(efisiensi/1e9).toFixed(2)} <span class="metric-unit">miliar</span>`;
+  if (elTurun) elTurun.innerHTML = `${rerataPct.toFixed(1)} <span class="metric-unit">%</span>`;
+  if (elEfisiensiSub) elEfisiensiSub.textContent = adaBelumNego ? 'Selisih HPS vs HN (fallback penawaran terendah jika belum nego)' : 'Selisih HPS vs hasil negosiasi';
+  if (elTurunSub) elTurunSub.textContent = adaBelumNego ? 'Rerata HN tiap paket (fallback penawaran terendah jika belum nego)' : 'Rerata hasil negosiasi tiap paket';
+}
+
+function renderRingkasan() {
+  const sorted = [...PAKET].sort((a,b) => b.hps - a.hps);
+  const tbody = document.getElementById('tbody-ringkasan'); if(!tbody) return;
+  tbody.innerHTML = sorted.map((p,i) => {
+    const min = minPenawaran(p);
+    const hn = getHargaNegosiasi(p);
+    const sudahNego = hn !== null;
+    const basisHarga = sudahNego ? hn : min;
+    const selisih = basisHarga - p.hps;
+    const pp = pct(basisHarga, p.hps);
+    const [bc] = getBadge(pp);
+    const barW = Math.min(Math.abs(pp)*3.5,100);
+    const barColor = pp<=-20?'#16A34A':pp<=-15?'#22C55E':pp<=-10?'#CA8A04':'#DC2626';
+    const winIdx = getPemenang(p.id);
+    const sp = [...p.penawaran].sort((a,b)=>a.harga-b.harga);
+    const statusCell = winIdx>=0
+      ? `<span class="badge badge-selesai" style="font-size:10px">&#9733; ${sp[winIdx].nama.split(' ').slice(0,3).join(' ')}</span>`
+      : `<span class="badge badge-aktif" style="font-size:10px">Evaluasi</span>`;
+    const belumNegoBadge = sudahNego ? '' : ' <span class="badge badge-akan" style="font-size:9px;vertical-align:middle">belum nego</span>';
+    return `<tr>
+      <td style="color:var(--abu);font-size:12px">${i+1}</td>
+      <td><div style="font-weight:600;font-size:13px">${p.nama}</div><div style="font-size:11px;color:var(--abu)">Ruas ${p.no_ruas} — ${p.lokasi}</div></td>
+      <td><a href="https://spse.inaproc.id/karanganyarkab/lelang/${p.kode_tender}/pengumumanlelang" target="_blank" class="link-lpse">${p.kode_tender}</a></td>
+      <td class="td-right" style="font-family:monospace;font-size:12px">${fmtRp(p.hps)}</td>
+      <td class="td-right"><div style="font-size:12px;font-family:monospace">${fmtRp(min)}</div><div style="font-size:11px;color:var(--abu)">${namaMin(p).split(' ').slice(0,3).join(' ')}</div></td>
+      <td class="td-right">${sudahNego ? `<div style="font-size:12px;font-family:monospace;color:#B45309;font-weight:600">${fmtRp(hn)}</div>` : `<div style="font-size:11px;color:var(--abu)">— belum nego</div>`}</td>
+      <td class="td-right" style="font-family:monospace;font-size:12px;color:var(--hijau)">${fmtRp(selisih)}${belumNegoBadge}</td>
+      <td class="td-right"><span class="badge ${bc}">${fmtPct(pp)}</span><div class="eff-wrap" style="margin-top:4px"><div class="eff-bar" style="width:${barW}%;background:${barColor}"></div></div></td>
+      <td class="td-center"><div style="font-size:13px;font-weight:700">${p.penawaran.length}</div><div style="font-size:10px;color:var(--abu)">dari ${p.peserta_daftar} daftar</div></td>
+      <td class="td-center" id="rstatus-${p.id}">${statusCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  const now = new Date();
+  const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  document.getElementById('tgl-cetak').textContent =
+    `Dicetak: ${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+  const tglTimelineEl = document.getElementById('tgl-timeline');
+  if (tglTimelineEl) tglTimelineEl.textContent = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+  initDB();
+
+  // ============================================================
+  // DATA AWAL HASIL EVALUASI RESMI LPSE — Ruas 144 Matesih-Plosorejo
+  // Sumber: tab "Hasil Evaluasi" SPSE, per 25 Juni 2026
+  // Peserta yang TIDAK memasukkan penawaran (Putra Jati Utama, Harapan
+  // Karya Perkasa, Gemilang Asa Bersama, CV. Rejekining Abadi) tidak
+  // tercatat di sini karena hanya 5 yang memasukkan penawaran.
+  // ============================================================
+  (function isiDataEvaluasiAwal() {
+    const paketId = 5; // Matesih - Plosorejo (no_ruas 144)
+    const p = PAKET.find(x => x.id === paketId);
+    if (!p) return;
+    const ps = [...p.penawaran].sort((a,b) => a.harga - b.harga);
+    // Mapping rank-by-price -> hasil evaluasi LPSE (key dicocokkan dari nama)
+    const hasilLPSE = {
+      'cv. karya utama': { adm:'lulus', kualifikasi:'gugur', teknis:'gugur', harga:'lulus', pembuktian:'gugur', pt:3148283734.44, ket:'di bawah 80% Nilai HPS' },
+      'cv. kojay maulana': { adm:'lulus', kualifikasi:'lulus', teknis:'gugur', harga:null, pembuktian:'belum', pt:3162671316.25, ket:'Kapasitas alat (Asphalt Finisher, Tandem Roller) tidak dapat dibuktikan kebenarannya oleh pemilik alat' },
+      'cv. putra cakra bersaudara': { adm:'lulus', kualifikasi:'lulus', teknis:'gugur', harga:null, pembuktian:'belum', pt:3166574895.36, ket:'Uraian Pekerjaan pada tabel IBPRP dalam Dokumen RKK tidak sesuai dengan Dokumen Pemilihan' },
+      'cipta graha': { adm:'lulus', kualifikasi:'lulus', teknis:'lulus', harga:'lulus', pembuktian:'lulus', pt:3433682120.67, hn:3431462120.67, ket:'', pk:false },
+      'perisai bangsa, cv': { adm:'lulus', kualifikasi:'lulus', teknis:'gugur', harga:null, pembuktian:'belum', pt:3461478492.12, ket:'Kapasitas alat yang dicantumkan dalam SP Sewa Alat (AMP) tidak sesuai dengan bukti kepemilikan.' },
+    };
+    ps.forEach((x, i) => {
+      const key = x.nama.toLowerCase().trim();
+      const h = hasilLPSE[key];
+      if (!h) return;
+      const k = dbKey(paketId, i);
+      if (!DB[k]) return;
+      DB[k].status_adm = h.adm;
+      DB[k].status_kualifikasi = h.kualifikasi;
+      DB[k].status_teknis = h.teknis;
+      DB[k].status_harga = h.harga || 'belum';
+      DB[k].status_pembuktian = h.pembuktian;
+      DB[k].harga_terkoreksi = h.pt || x.harga;
+      DB[k].hasil_negosiasi = h.hn || null;
+      DB[k].keterangan = h.ket || '';
+    });
+  })();
+
+  renderRingkasan();
+  renderMetrics();
+  renderChart();
+  renderTimeline();
+  renderPaketSelector();
+  renderPenyedia();
+  renderMonitoring();
+
+  // Sambungkan ke Firebase setelah render lokal awal selesai —
+  // begitu data cloud datang (onSnapshot), tampilan akan otomatis
+  // diperbarui lagi (lihat fbInit). Ini memastikan halaman tetap
+  // cepat tampil meski koneksi Firebase lambat/gagal.
+  fbInit();
+}
+
+window.addEventListener('DOMContentLoaded', init);
+window.selectPaket = selectPaket;
+window.switchTab = switchTab;
+window.saveField = saveField;
+window.saveSanggah = saveSanggah;
+window.saveCatatan = saveCatatan;
+window.downloadExcel = downloadExcel;
+window.uploadExcel = uploadExcel;
+window.konfirmasiReset = konfirmasiReset;
+</script>
+</body>
+</html>
